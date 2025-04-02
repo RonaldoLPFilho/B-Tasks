@@ -26,7 +26,7 @@ public class TaskService {
     }
 
     public Task save(TaskDTO dto){
-        Task task = new Task(dto.getName(), dto.getDescription());
+        Task task = new Task(dto.getTitle(), dto.getDescription());
 
         if(!isValidTask(task)){
             throw new IllegalArgumentException("Invalid task");
@@ -42,11 +42,17 @@ public class TaskService {
     public Task update(Long taskId, TaskDTO dto){
         Task task = findById(taskId);
 
-        task.setTitle(dto.getName());
+        task.setTitle(dto.getTitle());
         task.setDescription(dto.getDescription());
         task.setCompleted(dto.isCompleted());
         return taskRepository.save(task);
 
+    }
+
+    public void updateCompleted(long taskId, boolean completed){
+        Task task = findById(taskId);
+        task.setCompleted(completed);
+        taskRepository.save(task);
     }
 
 

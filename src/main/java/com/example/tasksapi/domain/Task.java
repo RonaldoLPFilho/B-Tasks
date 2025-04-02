@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-public class Task {
+public class Task extends Auditable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
@@ -17,7 +17,6 @@ public class Task {
 
     private boolean completed;
 
-    private LocalDateTime createdAt;
 
     public Task() {
 
@@ -27,7 +26,6 @@ public class Task {
         this.title = title;
         this.description = description;
         this.completed = false;
-        this.createdAt = LocalDateTime.now();
     }
 
     public long getId() {
@@ -58,11 +56,4 @@ public class Task {
         this.completed = completed;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
 }

@@ -1,15 +1,18 @@
 package com.example.tasksapi.controller;
 
 import com.example.tasksapi.domain.Task;
+import com.example.tasksapi.dto.ApiResponseDTO;
 import com.example.tasksapi.dto.TaskDTO;
 import com.example.tasksapi.service.TaskService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping(value = "/api/tasks", produces = MediaType.APPLICATION_JSON_VALUE)
 public class TaskController {
 
     private final TaskService taskService;
@@ -19,28 +22,40 @@ public class TaskController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Task>> getAllTasks() {
-        return ResponseEntity.ok(taskService.findAll());
+    public ResponseEntity<ApiResponseDTO<List<Task>>> getAllTasks() {
+        List<Task> data = taskService.findAll();
+        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Tasks", data));
     }
 
     @GetMapping("/{taskId}")
-    public ResponseEntity<Task> getTaskById(@PathVariable Long taskId) {
-        return ResponseEntity.ok(taskService.findById(taskId));
+    public ResponseEntity<ApiResponseDTO<Task>> getTaskById(@PathVariable Long taskId) {
+        Task task = taskService.findById(taskId);
+        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task found", task));
     }
 
     @DeleteMapping("/{taskId}")
-    public ResponseEntity<String> deleteTaskById(@PathVariable Long taskId) {
+    public ResponseEntity<ApiResponseDTO<Void>> deleteTaskById(@PathVariable Long taskId) {
         taskService.deleteById(taskId);
-        return ResponseEntity.ok("Deleted task with id " + taskId);
+        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Success deleted task id " + taskId, null));
     }
 
-    @PostMapping
-    public ResponseEntity<Task> createTask(@RequestBody TaskDTO dto) {
-        return ResponseEntity.ok(taskService.save(dto));
+    @PostMapping()
+    public ResponseEntity<ApiResponseDTO<Task>> createTask(@RequestBody TaskDTO dto) {
+        Task data = taskService.save(dto);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponseDTO.success(HttpStatus.CREATED, "Task created", data));
     }
 
-    @PutMapping("{/taskId")
-    public ResponseEntity<Task> updateTask(@PathVariable Long taskId, @RequestBody TaskDTO dto) {
-        return ResponseEntity.ok(taskService.update(taskId, dto));
+    @PutMapping("/{taskId}")
+    public ResponseEntity<ApiResponseDTO<Task>> updateTask(@PathVariable Long taskId, @RequestBody TaskDTO dto) {
+        Task data = taskService.update(taskId, dto);
+        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task updated", data));
+    }
+
+    @PutMapping("/{taskId}/{completed}")
+    public ResponseEntity<ApiResponseDTO<Long>> completeTask(@PathVariable Long taskId, @PathVariable boolean completed) {
+        taskService.updateCompleted(taskId, completed);
+        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task completed", taskId));
     }
 }
