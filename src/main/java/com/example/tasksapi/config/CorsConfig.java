@@ -1,4 +1,4 @@
-package com.example.tasksapi.configs;
+package com.example.tasksapi.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
