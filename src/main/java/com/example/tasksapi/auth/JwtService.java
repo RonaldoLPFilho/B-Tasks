@@ -22,4 +22,28 @@ public class JwtService {
                 .signWith(secretKey)
                 .compact();
     }
+
+    public String extractEmail(String token){
+        return Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getSubject(); //subject = email (setado do generate token)
+    }
+
+    public boolean isTokenValid(String token, User user){
+        String email = extractEmail(token);
+        return (email.equals(user.getEmail())) && !isTokenExpired(token);
+    }
+
+    public boolean isTokenExpired(String token){
+        Date expiration = Jwts.parserBuilder()
+                .setSigningKey(secretKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .getExpiration();
+        return expiration.before(new Date());
+    }
 }
