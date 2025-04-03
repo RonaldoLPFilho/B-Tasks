@@ -5,6 +5,8 @@ import com.example.tasksapi.dto.UserDTO;
 import com.example.tasksapi.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 public class UserService {
     private UserRepository userRepository;
@@ -22,5 +24,9 @@ public class UserService {
         boolean emailExists = userRepository.existsByEmail(email);
 
         return usernameExists && emailExists;
+    }
+
+    public Optional<User> findByEmail(String email){
+        return userRepository.findByEmail(email);
     }
 }

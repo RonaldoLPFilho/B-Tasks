@@ -2,6 +2,7 @@ package com.example.tasksapi.controller;
 
 import com.example.tasksapi.auth.AuthService;
 import com.example.tasksapi.dto.ApiResponseDTO;
+import com.example.tasksapi.dto.LoginDTO;
 import com.example.tasksapi.dto.UserDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,5 +34,17 @@ public class AuthController {
                 .status(HttpStatus.CREATED)
                 .body(ApiResponseDTO.success(HttpStatus.CREATED, "User created", null)
                 );
+    }
+
+    @PostMapping
+    public ResponseEntity<ApiResponseDTO<String>> login(@RequestBody LoginDTO dto) {
+        try{
+            String token = authService.login(dto);
+            return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Login successful", token));
+        }catch (RuntimeException e){
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponseDTO.error(HttpStatus.UNAUTHORIZED, e.getMessage()));
+        }
     }
 }
