@@ -2,6 +2,9 @@ package com.example.tasksapi.domain;
 
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Table(name = "users")
 public class User extends Auditable {
@@ -17,6 +20,9 @@ public class User extends Auditable {
 
     private String password;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Task> tasks;
+
 
     public User() {
         super();
@@ -26,6 +32,7 @@ public class User extends Auditable {
         this.username = username;
         this.email = email;
         this.password = password;
+        this.tasks = new ArrayList<>();
     }
 
     public long getId() {
@@ -54,5 +61,13 @@ public class User extends Auditable {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public List<Task> getTasks() {
+        return tasks;
+    }
+
+    public void setTasks(List<Task> tasks) {
+        this.tasks = tasks;
     }
 }

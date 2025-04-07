@@ -1,5 +1,6 @@
 package com.example.tasksapi.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -17,6 +18,10 @@ public class Task extends Auditable {
 
     private boolean completed;
 
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
+    private User user;
 
     public Task() {
 
@@ -56,4 +61,11 @@ public class Task extends Auditable {
         this.completed = completed;
     }
 
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
+    }
 }

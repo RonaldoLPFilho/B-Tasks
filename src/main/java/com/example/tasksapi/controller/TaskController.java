@@ -40,8 +40,11 @@ public class TaskController {
     }
 
     @PostMapping()
-    public ResponseEntity<ApiResponseDTO<Task>> createTask(@RequestBody TaskDTO dto) {
-        Task data = taskService.save(dto);
+    public ResponseEntity<ApiResponseDTO<Task>> createTask(@RequestBody TaskDTO dto, @RequestHeader("Authorization") String authorizationToken) {
+
+        String token = authorizationToken.substring(7);
+        Task data = taskService.save(dto, token);
+
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponseDTO.success(HttpStatus.CREATED, "Task created", data));
