@@ -21,9 +21,12 @@ public class TaskController {
         this.taskService = taskService;
     }
 
-    @GetMapping
-    public ResponseEntity<ApiResponseDTO<List<Task>>> getAllTasks() {
-        List<Task> data = taskService.findAll();
+    @GetMapping()
+    public ResponseEntity<ApiResponseDTO<List<Task>>> getAllTasks(@RequestHeader("Authorization") String authHeader) {
+
+        String token = authHeader.substring(7);
+
+        List<Task> data = taskService.findAllByToken(token);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Tasks", data));
     }
 

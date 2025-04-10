@@ -30,15 +30,11 @@ public class TaskService {
     }
 
     public Task save(TaskDTO dto, String token){
+        User user = userService.extractEmailFromTokenAndReturnUser(token)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
         Task task = new Task(dto.getTitle(), dto.getDescription());
-
-        Optional<User> user = userService.extractEmailFromTokenAndReturnUser(token);
-
-        if(user.isPresent()){
-            task.setUser(user.get());
-        }else{
-            throw new RuntimeException("User not found");
-        }
+        task.setUser(user);
 
         if(!isValidTask(task)){
             throw new IllegalArgumentException("Invalid task");
@@ -67,6 +63,16 @@ public class TaskService {
         taskRepository.save(task);
     }
 
+
+    public List<Task> findAllByToken(String token){
+        Optional<User> user = userService.extractEmailFromTokenAndReturnUser(token);
+
+        if(user.isEmpty()){
+            throw new IllegalArgumentException("User not found");
+        }
+
+        return taskRepository.findByUserId(user.get().getId());
+    }
 
     private boolean isValidTask(Task task){
         return task.getTitle() != null &&

@@ -47,4 +47,15 @@ public class AuthService {
         return jwtService.generateToken(user);
     }
 
+//    public String resetPassword(String email){
+//        Optional<User> userOptional = userService.findByEmail(email);
+//
+//        if(userOptional.isEmpty()) {
+//            throw new RuntimeException("Usuário não encontrado");
+//        }
+//
+//        User user = userOptional.get();
+//
+//    }
+
 }
