@@ -2,6 +2,7 @@ package com.example.tasksapi.auth;
 
 import com.example.tasksapi.domain.User;
 import com.example.tasksapi.dto.LoginDTO;
+import com.example.tasksapi.dto.LoginResponseDTO;
 import com.example.tasksapi.dto.UserDTO;
 import com.example.tasksapi.service.UserService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,7 +32,7 @@ public class AuthService {
         return true;
     }
 
-    public String login(LoginDTO dto) {
+    public LoginResponseDTO login(LoginDTO dto) {
         Optional<User> userOptional = userService.findByEmail(dto.email());
 
         if(userOptional.isEmpty()) {
@@ -44,18 +45,14 @@ public class AuthService {
             throw new RuntimeException("Senha incorreta");
         }
 
-        return jwtService.generateToken(user);
+        LoginResponseDTO responseDTO = new LoginResponseDTO();
+
+        responseDTO.setToken(jwtService.generateToken(user));
+        responseDTO.setUsername(user.getUsername());
+
+        return responseDTO;
     }
 
-//    public String resetPassword(String email){
-//        Optional<User> userOptional = userService.findByEmail(email);
-//
-//        if(userOptional.isEmpty()) {
-//            throw new RuntimeException("Usuário não encontrado");
-//        }
-//
-//        User user = userOptional.get();
-//
-//    }
+
 
 }
