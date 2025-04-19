@@ -1,3 +1,7 @@
+
+#Sensível:
+src/main/resources/sensitive.conf
+
 HELP.md
 target/
 !.mvn/wrapper/maven-wrapper.jar
