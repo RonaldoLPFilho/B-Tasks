@@ -11,7 +11,7 @@ public class ApiResponseDTO<T> {
     private LocalDateTime timestamp;
     private T data;
 
-    private ApiResponseDTO(ApiResponseStatus status, String message, HttpStatus httpStatus, T data) {
+    public ApiResponseDTO(ApiResponseStatus status, String message, HttpStatus httpStatus, T data) {
         this.status = status;
         this.message = message;
         this.httpStatus = httpStatus;

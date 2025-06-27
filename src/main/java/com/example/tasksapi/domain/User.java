@@ -4,13 +4,15 @@ import jakarta.persistence.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users") // user eh reservado
 public class User extends Auditable {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    @GeneratedValue
+    @Column(columnDefinition = "uuid")
+    private UUID id;
 
     @Column(unique = true, nullable = false)
     private String username;
@@ -23,6 +25,8 @@ public class User extends Auditable {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Task> tasks;
 
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Category> categories;
 
     public User() {
         super();
@@ -35,7 +39,7 @@ public class User extends Auditable {
         this.tasks = new ArrayList<>();
     }
 
-    public long getId() {
+    public UUID getId() {
         return id;
     }
 
@@ -69,5 +73,13 @@ public class User extends Auditable {
 
     public void setTasks(List<Task> tasks) {
         this.tasks = tasks;
+    }
+
+    public List<Category> getCategories() {
+        return categories;
+    }
+
+    public void setCategories(List<Category> categories) {
+        this.categories = categories;
     }
 }

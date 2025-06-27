@@ -1,6 +1,9 @@
 package com.example.tasksapi.dto;
 
+import com.example.tasksapi.domain.Category;
+
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 public class TaskDTO {
     private String title;
@@ -9,6 +12,7 @@ public class TaskDTO {
     private LocalDateTime createDate;
     private LocalDateTime finishDate;
     private String jiraId;
+    private UUID categoryId;
 
     public String getTitle() {
         return title;
@@ -22,7 +26,6 @@ public class TaskDTO {
         return completed;
     }
 
-
     public LocalDateTime getCreateDate() {
         return createDate;
     }
@@ -34,5 +37,7 @@ public class TaskDTO {
     public String getJiraId() {
         return jiraId;
     }
+
+    public UUID getCategoryId() {return categoryId;}
 
 }
