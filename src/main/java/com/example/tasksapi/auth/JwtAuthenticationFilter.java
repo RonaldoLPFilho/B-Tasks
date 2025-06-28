@@ -35,7 +35,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String jwt = authHeader.substring(7);
-        String userEmail = jwtService.extractEmail(jwt);
+        String userEmail = null;
+
+        try{
+            userEmail = jwtService.extractEmail(jwt);
+        }catch (io.jsonwebtoken.ExpiredJwtException | io.jsonwebtoken.security.SignatureException e){
+            //Essas exceptions ja estao sendo tratadas no entrypoint, por isso a ideia aqui é passar a request adiante(neste caso sem autenticar), mas não lancar a exception para nao poluir a console.
+            request.setAttribute("jwt_exception", e);
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         if(userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             User user = userService.findByEmail(userEmail).orElse(null);

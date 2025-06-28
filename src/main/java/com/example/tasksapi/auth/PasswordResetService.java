@@ -2,6 +2,8 @@ package com.example.tasksapi.auth;
 
 import com.example.tasksapi.domain.PasswordResetToken;
 import com.example.tasksapi.domain.User;
+import com.example.tasksapi.exception.InvalidDataException;
+import com.example.tasksapi.exception.NotFoundException;
 import com.example.tasksapi.repository.PasswordResetTokenRepository;
 import com.example.tasksapi.service.UserService;
 import jakarta.transaction.Transactional;
@@ -26,7 +28,7 @@ public class PasswordResetService {
     @Transactional
     public String createPasswordResetToken(String email) {
         User user = userService.findByEmail(email).orElseThrow(
-                () -> new RuntimeException("User not found")
+                () -> new NotFoundException("User not found")
         );
 
         tokenRepository.findByUserId(user.getId())
@@ -45,10 +47,10 @@ public class PasswordResetService {
 
     public void resetPassword(String token, String newPassword) {
         PasswordResetToken resetToken = tokenRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Token not found"));
+                .orElseThrow(() -> new NotFoundException("Token not found"));
 
         if(resetToken.getExpirationDate().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Token is expired");
+            throw new InvalidDataException("Token is expired");
         }
 
         User user = resetToken.getUser();
@@ -60,10 +62,10 @@ public class PasswordResetService {
 
     public void validateToken(String token) {
         PasswordResetToken resetToken = tokenRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Token not found"));
+                .orElseThrow(() -> new NotFoundException("Token not found"));
 
         if(resetToken.getExpirationDate().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Token is expired");
+            throw new InvalidDataException("Token is expired");
         }
     }
 }

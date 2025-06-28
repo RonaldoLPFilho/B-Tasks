@@ -14,6 +14,7 @@ public class Auditable {
 
     private LocalDateTime updatedAt;
 
+
     @PrePersist
     public void prePersist(){
         createdAt = LocalDateTime.now();

@@ -4,24 +4,28 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
+import java.util.UUID;
+
 
 @Entity
 public class Task extends Auditable {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    @GeneratedValue
+    @Column(columnDefinition = "uuid")
+    private UUID id;
 
     @Column(nullable = false)
     private String title;
 
     private String description;
 
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    private Category category;
+
     private boolean completed;
 
-    @Column(nullable = false)
-    private LocalDate createDate;
-
-    private LocalDate finishDate;
+    private LocalDate finishedAt;
 
     @Column(nullable = true)
     private String jiraId;
@@ -35,17 +39,17 @@ public class Task extends Auditable {
 
     }
 
-    public Task(String title, String description, User user, String jiraId) {
+    public Task(String title, String description, User user, String jiraId, Category category) {
         this.title = title;
         this.description = description;
-        this.createDate = LocalDate.now();
-        this.finishDate = null;
+        this.finishedAt = null;
         this.user = user;
         this.completed = false;
         Task.this.jiraId = jiraId;
+        this.category = category;
     }
 
-    public long getId() {
+    public UUID getId() {
         return id;
     }
 
@@ -81,20 +85,12 @@ public class Task extends Auditable {
         this.user = user;
     }
 
-    public LocalDate getCreateDate() {
-        return createDate;
-    }
-
-    public void setCreateDate(LocalDate createDate) {
-        this.createDate = createDate;
-    }
-
     public LocalDate getFinishDate(){
-        return finishDate;
+        return finishedAt;
     }
 
-    public void setFinishDate(LocalDate finishDate){
-        this.finishDate = finishDate;
+    public void setFinishDate(LocalDate finishedAt){
+        this.finishedAt = finishedAt;
     }
 
     public String getJiraId() {
@@ -103,5 +99,12 @@ public class Task extends Auditable {
 
     public void setJiraId(String jiraId) {
         this.jiraId = jiraId;
+    }
+
+    public Category getCategory() {
+        return category;
+    }
+    public void setCategory(Category category) {
+        this.category = category;
     }
 }

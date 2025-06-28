@@ -5,9 +5,10 @@ import com.example.tasksapi.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
+import java.util.UUID;
 
-public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, Long> {
+public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, UUID> {
     Optional<PasswordResetToken> findByToken(String token);
-    Optional<PasswordResetToken> findByUserId(Long userId);
-    void deleteByUserId(Long userId);
+    Optional<PasswordResetToken> findByUserId(UUID userId);
+    void deleteByUserId(UUID userId);
 }

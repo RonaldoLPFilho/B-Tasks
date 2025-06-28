@@ -4,6 +4,8 @@ import com.example.tasksapi.domain.User;
 import com.example.tasksapi.dto.LoginDTO;
 import com.example.tasksapi.dto.LoginResponseDTO;
 import com.example.tasksapi.dto.UserDTO;
+import com.example.tasksapi.exception.NotFoundException;
+import com.example.tasksapi.exception.UnauthorizedException;
 import com.example.tasksapi.service.UserService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -36,13 +38,13 @@ public class AuthService {
         Optional<User> userOptional = userService.findByEmail(dto.email());
 
         if(userOptional.isEmpty()) {
-            throw new RuntimeException("Usuário não encontrado");
+            throw new NotFoundException("User not found");
         }
 
         User user = userOptional.get();
 
         if(!passwordEncoder.matches(dto.password(), user.getPassword())) {
-            throw new RuntimeException("Senha incorreta");
+            throw new UnauthorizedException("Credentials wrong");
         }
 
         LoginResponseDTO responseDTO = new LoginResponseDTO();

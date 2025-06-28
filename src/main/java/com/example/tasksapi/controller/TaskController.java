@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping(value = "/api/tasks", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -31,13 +32,13 @@ public class TaskController {
     }
 
     @GetMapping("/{taskId}")
-    public ResponseEntity<ApiResponseDTO<Task>> getTaskById(@PathVariable Long taskId) {
+    public ResponseEntity<ApiResponseDTO<Task>> getTaskById(@PathVariable UUID taskId) {
         Task task = taskService.findById(taskId);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task found", task));
     }
 
     @DeleteMapping("/{taskId}")
-    public ResponseEntity<ApiResponseDTO<Void>> deleteTaskById(@PathVariable Long taskId) {
+    public ResponseEntity<ApiResponseDTO<Void>> deleteTaskById(@PathVariable UUID taskId) {
         taskService.deleteById(taskId);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Success deleted task id " + taskId, null));
     }
@@ -54,13 +55,13 @@ public class TaskController {
     }
 
     @PutMapping("/{taskId}")
-    public ResponseEntity<ApiResponseDTO<Task>> updateTask(@PathVariable Long taskId, @RequestBody TaskDTO dto) {
+    public ResponseEntity<ApiResponseDTO<Task>> updateTask(@PathVariable UUID taskId, @RequestBody TaskDTO dto) {
         Task data = taskService.update(taskId, dto);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task updated", data));
     }
 
     @PutMapping("/{taskId}/{completed}")
-    public ResponseEntity<ApiResponseDTO<Long>> completeTask(@PathVariable Long taskId, @PathVariable boolean completed) {
+    public ResponseEntity<ApiResponseDTO<UUID>> completeTask(@PathVariable UUID taskId, @PathVariable boolean completed) {
         taskService.updateCompleted(taskId, completed);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task completed", taskId));
     }
