@@ -10,8 +10,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,44 +64,47 @@ public class OpenAIService {
 
             StringBuilder prompt = new StringBuilder();
 
-            prompt.append("Idioma: ").append(language).append("\n\n");
-            prompt.append("Por favor, gere um resumo da reunião diária com base nas seguintes tarefas: ");
+            prompt.append("Você é um assistente que gera resumos diários com base em tarefas fornecidas. ")
+                    .append("A resposta **deve ser no idioma: ").append(language).append("**.\n")
+                    .append("Você **deve seguir fielmente os dados fornecidos, e caso as terefas titulo e description estejam em outro idioma, traduza para o idioma selecionado** e gerar uma saída no formato abaixo:\n\n")
+
+                    .append("=== FORMATO ESPERADO ===\n")
+                    .append("Feito:\n")
+                    .append("- Ontem trabalhei na task X, onde fiz Y e falei com Z (se presente na descrição).\n\n")
+                    .append("Plano do dia:\n")
+                    .append("- Hoje pretendo concluir ou continuar a task W com foco em XYZ.\n")
+                    .append("=== FIM DO FORMATO ===\n\n")
+
+                    .append("Abaixo estão as tarefas separadas por categoria. Use essas informações para gerar o resumo:\n\n");
 
             if (!createdYestardayAndCompleted.isEmpty()) {
-                prompt.append("Tarefas criadas ontem e finalizadas:\n");
+                prompt.append("🟢 Tarefas criadas ontem e finalizadas:\n");
                 createdYestardayAndCompleted.forEach(task -> appendTask(task, prompt));
             }
-
-            if(!createdYestardayPending.isEmpty()){
-                prompt.append("Tarefas criadas ontem e ainda não foram concluídas:\n");
+            if (!createdYestardayPending.isEmpty()) {
+                prompt.append("🟡 Tarefas criadas ontem e pendentes:\n");
                 createdYestardayPending.forEach(task -> appendTask(task, prompt));
             }
-
-            if(!createdTodayAndCompleted.isEmpty()){
-                prompt.append("Tarefas criadas hoje e finalizadas:\n");
+            if (!createdTodayAndCompleted.isEmpty()) {
+                prompt.append("🟢 Tarefas criadas hoje e finalizadas:\n");
                 createdTodayAndCompleted.forEach(task -> appendTask(task, prompt));
             }
-
-            if(!createdTodayPending.isEmpty()){
-                prompt.append("Tarefas criadas hoje e pendentes: \n");
+            if (!createdTodayPending.isEmpty()) {
+                prompt.append("🟡 Tarefas criadas hoje e pendentes:\n");
                 createdTodayPending.forEach(task -> appendTask(task, prompt));
             }
-
-            if(!pastPending.isEmpty()){
-                prompt.append("Tarefas antigas e ainda não finalizadas: \n");
+            if (!pastPending.isEmpty()) {
+                prompt.append("🔴 Tarefas antigas ainda não finalizadas:\n");
                 pastPending.forEach(task -> appendTask(task, prompt));
             }
 
-            prompt.append("\nFormato de resposta esperado:\n\n");
-            prompt.append("Feito:\n");
-            prompt.append("Ontem trabalhei na task xxx, falei com xxx (obtido na description), e consegui avançar bem na tarefa...\n\n");
-            prompt.append("Plano do dia:\n");
-            prompt.append("Hoje vou seguir com a tarefa xxx, com o objetivo de xxx\n");
+            prompt.append("\n⚠️ Não invente informações. Use apenas o que está listado.");
+            prompt.append("\n⚠️ O tom deve ser profissional, claro e objetivo.");
 
             messages.add(new ChatMessage(ChatMessageRole.USER.value(), prompt.toString()));
 
             ChatCompletionRequest request = ChatCompletionRequest.builder()
-                .model("gpt-3.5-turbo")
+                .model("gpt-4o")
                 .messages(messages)
                 .build();
 
