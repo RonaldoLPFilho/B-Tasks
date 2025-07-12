@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,7 +37,7 @@ public class Task extends Auditable {
     @JsonIgnore
     private User user;
 
-    @OneToMany
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Subtask> subtasks;
 
 
@@ -52,6 +53,7 @@ public class Task extends Auditable {
         this.completed = false;
         Task.this.jiraId = jiraId;
         this.category = category;
+        this.subtasks = new ArrayList<>();
     }
 
     public UUID getId() {
@@ -109,6 +111,7 @@ public class Task extends Auditable {
     public Category getCategory() {
         return category;
     }
+
     public void setCategory(Category category) {
         this.category = category;
     }
