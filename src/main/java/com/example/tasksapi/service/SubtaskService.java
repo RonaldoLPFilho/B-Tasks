@@ -33,6 +33,8 @@ public class SubtaskService {
            return subtaskRepository.save(sub);
     }
 
+
+
     private boolean isValid(Subtask subtask){
         return subtask.getTitle() != null &&
                 !subtask.getTitle().isBlank();

@@ -1,5 +1,6 @@
 package com.example.tasksapi.domain;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import java.util.UUID;
@@ -17,6 +18,8 @@ public class Subtask {
     private boolean completed;
 
     @ManyToOne
+    @JoinColumn(name = "task_id")
+    @JsonBackReference
     private Task task;
 
     public Subtask(String title, boolean completed, Task task) {
