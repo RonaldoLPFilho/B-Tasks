@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/subtask")
+@RequestMapping("/api/subtasks")
 public class SubtaskController {
 
     private final SubtaskService subtaskService;
@@ -32,7 +32,13 @@ public class SubtaskController {
     @PutMapping("/{subtaskId}/{isComplete}")
     public ResponseEntity<ApiResponseDTO<Void>> changeSubtaskStatus(@PathVariable UUID subtaskId, @PathVariable boolean isComplete) {
         subtaskService.completeSubtask(subtaskId, isComplete);
-        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Subtask completed", null));
+        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Subtask status changed", null));
+    }
+
+    @DeleteMapping("/{subtaskId}")
+    public ResponseEntity<ApiResponseDTO<Void>> deleteById(@PathVariable UUID subtaskId) {
+        subtaskService.deleteById(subtaskId);
+        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Subtask deleted", null));
     }
 
 }

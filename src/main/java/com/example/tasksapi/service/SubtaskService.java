@@ -44,6 +44,11 @@ public class SubtaskService {
     }
 
 
+    public void deleteById(UUID id) {
+        subtaskRepository.deleteById(id);
+    }
+
+
     private boolean isValid(Subtask subtask){
         return subtask.getTitle() != null &&
                 !subtask.getTitle().isBlank();

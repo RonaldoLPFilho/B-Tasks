@@ -2,21 +2,24 @@ package com.example.tasksapi.service;
 
 import com.example.tasksapi.domain.Comment;
 import com.example.tasksapi.domain.Task;
+import com.example.tasksapi.domain.User;
 import com.example.tasksapi.dto.CreateCommentRequestDTO;
 import com.example.tasksapi.exception.InvalidDataException;
 import com.example.tasksapi.repository.CommentRepository;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 public class CommentService {
 
     private final CommentRepository commentRepository;
-    private final UserService userService;
     private final TaskService taskService;
 
-    public CommentService(CommentRepository commentRepository, UserService userService, TaskService taskService) {
+    public CommentService(CommentRepository commentRepository, TaskService taskService) {
         this.commentRepository = commentRepository;
-        this.userService = userService;
         this.taskService = taskService;
     }
 
@@ -27,7 +30,7 @@ public class CommentService {
             Task task = taskService.findById(dto.taskId());
             Comment comment = new Comment(
                     dto.description(),
-                    dto.username(),
+                    getCurrentUsername(),
                     task
             );
 
@@ -37,19 +40,27 @@ public class CommentService {
         }
     }
 
+    public void deleteById(UUID id) {
+        commentRepository.deleteById(id);
+    }
+
     private boolean isValid(CreateCommentRequestDTO createCommentRequestDTO) {
-        if(createCommentRequestDTO.description().isBlank() || createCommentRequestDTO.taskId() == null || createCommentRequestDTO.username().isBlank())
-            return false;
-
-
-        if(!userService.userExists(createCommentRequestDTO.username()))
+        if(createCommentRequestDTO.description().isBlank() || createCommentRequestDTO.taskId() == null)
             return false;
 
 
         if(!taskService.existsById(createCommentRequestDTO.taskId()))
             return false;
 
-
         return true;
+    }
+
+    private String getCurrentUsername() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if(authentication != null && authentication.isAuthenticated()){
+            User user = (User) authentication.getPrincipal();
+            return user.getUsername();
+        }
+        return null;
     }
 }
