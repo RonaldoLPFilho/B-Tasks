@@ -5,8 +5,11 @@ import com.example.tasksapi.domain.Subtask;
 import com.example.tasksapi.domain.Task;
 import com.example.tasksapi.dto.CreateSubstaskRequestDTO;
 import com.example.tasksapi.exception.InvalidDataException;
+import com.example.tasksapi.exception.NotFoundException;
 import com.example.tasksapi.repository.SubtaskRepository;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 public class SubtaskService {
@@ -23,7 +26,6 @@ public class SubtaskService {
         Task task = taskService.findById(dto.taskId());
         Subtask sub = new Subtask(
                 dto.title(),
-                dto.completed(),
                 task
         );
 
@@ -33,6 +35,13 @@ public class SubtaskService {
            return subtaskRepository.save(sub);
     }
 
+    public void completeSubtask(UUID subTaskId, boolean isComplete) {
+        Subtask sub = subtaskRepository.findById(subTaskId)
+                .orElseThrow(() -> new NotFoundException("Subtask not found with id " + subTaskId));
+
+        sub.setCompleted(isComplete);
+        subtaskRepository.save(sub);
+    }
 
 
     private boolean isValid(Subtask subtask){

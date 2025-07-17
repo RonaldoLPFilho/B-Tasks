@@ -22,11 +22,13 @@ public class Subtask {
     @JsonBackReference
     private Task task;
 
-    public Subtask(String title, boolean completed, Task task) {
+    public Subtask(String title, Task task) {
         this.title = title;
-        this.completed = completed;
+        this.completed = false;
         this.task = task;
     }
+
+    public Subtask() {}
 
     public UUID getId() {
         return id;
