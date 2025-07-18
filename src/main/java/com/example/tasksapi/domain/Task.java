@@ -1,9 +1,12 @@
 package com.example.tasksapi.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 
@@ -35,6 +38,14 @@ public class Task extends Auditable {
     @JsonIgnore
     private User user;
 
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @JsonManagedReference
+    private List<Subtask> subtasks;
+
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @JsonManagedReference
+    private List<Comment> comments;
+
     public Task() {
 
     }
@@ -47,6 +58,7 @@ public class Task extends Auditable {
         this.completed = false;
         Task.this.jiraId = jiraId;
         this.category = category;
+        this.subtasks = new ArrayList<>();
     }
 
     public UUID getId() {
@@ -104,7 +116,20 @@ public class Task extends Auditable {
     public Category getCategory() {
         return category;
     }
+
     public void setCategory(Category category) {
         this.category = category;
+    }
+
+    public LocalDate getFinishedAt() {
+        return finishedAt;
+    }
+
+    public List<Subtask> getSubtasks() {
+        return subtasks;
+    }
+
+    public List<Comment> getComments() {
+        return comments;
     }
 }

@@ -96,6 +96,10 @@ public class TaskService {
         taskRepository.save(task);
     }
 
+    public boolean existsById(UUID id){
+        return taskRepository.existsById(id);
+    }
+
     private boolean isValidTask(Task task){
         return task.getTitle() != null &&
                 !task.getTitle().isBlank();
