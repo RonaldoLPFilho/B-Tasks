@@ -3,7 +3,7 @@ package com.example.tasksapi.controller;
 import com.example.tasksapi.domain.Task;
 import com.example.tasksapi.dto.ApiResponseDTO;
 import com.example.tasksapi.dto.TaskDTO;
-import com.example.tasksapi.service.TaskService;
+import com.example.tasksapi.service.task.TaskService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;

@@ -28,6 +28,9 @@ public class User extends Auditable {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Category> categories;
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private PomodoroPreferences pomodoroPreferences;
+
     public User() {
         super();
     }
@@ -81,5 +84,13 @@ public class User extends Auditable {
 
     public void setCategories(List<Category> categories) {
         this.categories = categories;
+    }
+
+    public PomodoroPreferences getPomodoroPreferences() {
+        return pomodoroPreferences;
+    }
+
+    public void setPomodoroPreferences(PomodoroPreferences pomodoroPreferences) {
+        this.pomodoroPreferences = pomodoroPreferences;
     }
 }

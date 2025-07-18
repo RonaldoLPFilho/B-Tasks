@@ -17,12 +17,10 @@ import java.util.UUID;
 public class CategoryService {
     private final CategoryRepository categoryRepository;
     private final UserService userService;
-    private final TaskRepository taskRepository;
 
-    public CategoryService(CategoryRepository categoryRepository, UserService userService, TaskRepository taskRepository) {
+    public CategoryService(CategoryRepository categoryRepository, UserService userService) {
         this.categoryRepository = categoryRepository;
         this.userService = userService;
-        this.taskRepository = taskRepository;
     }
 
     public List<Category> findAllByToken(String token) {

@@ -3,7 +3,7 @@ package com.example.tasksapi.controller;
 import com.example.tasksapi.domain.Subtask;
 import com.example.tasksapi.dto.ApiResponseDTO;
 import com.example.tasksapi.dto.CreateSubstaskRequestDTO;
-import com.example.tasksapi.service.SubtaskService;
+import com.example.tasksapi.service.task.SubtaskService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
