@@ -1,7 +1,7 @@
-package com.example.tasksapi.controller;
+package com.example.tasksapi.controller.task;
 
 import com.example.tasksapi.dto.ApiResponseDTO;
-import com.example.tasksapi.service.OpenAIService;
+import com.example.tasksapi.service.task.TaskSummaryDailyService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -11,16 +11,16 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping(value = "/api/daily", produces = MediaType.APPLICATION_JSON_VALUE)
 public class DailySummaryController {
 
-    private final OpenAIService openAIService;
+    private final TaskSummaryDailyService taskSummaryDailyService;
 
-    public DailySummaryController(OpenAIService openAIService) {
-        this.openAIService = openAIService;
+    public DailySummaryController(TaskSummaryDailyService taskSummaryDailyService) {
+        this.taskSummaryDailyService = taskSummaryDailyService;
     }
 
     @GetMapping("/summary")
     public ResponseEntity<ApiResponseDTO<String>> getDailySummary(@RequestHeader("Authorization") String authHeader, @RequestParam String language) {
         String token = authHeader.substring(7);
-        String summary = openAIService.generateDailySummary(token, language);
+        String summary = taskSummaryDailyService.generateDailySummary(token, language);
 
         return ResponseEntity.ok(
             ApiResponseDTO.success(HttpStatus.OK, "Daily summary generated successfully", summary)

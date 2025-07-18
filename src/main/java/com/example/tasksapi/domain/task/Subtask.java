@@ -1,4 +1,4 @@
-package com.example.tasksapi.domain;
+package com.example.tasksapi.domain.task;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;

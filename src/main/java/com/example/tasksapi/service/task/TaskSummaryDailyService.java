@@ -1,7 +1,6 @@
-package com.example.tasksapi.service;
+package com.example.tasksapi.service.task;
 
-import com.example.tasksapi.domain.Task;
-import com.example.tasksapi.service.task.TaskService;
+import com.example.tasksapi.domain.task.Task;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
 import com.theokanning.openai.completion.chat.ChatMessage;
 import com.theokanning.openai.completion.chat.ChatMessageRole;
@@ -15,12 +14,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class OpenAIService {
+public class TaskSummaryDailyService {
 
     private final OpenAiService openAiService;
     private final TaskService taskService;
 
-    public OpenAIService(@Value("${openai.api.key}") String apiKey, TaskService taskService) {
+    public TaskSummaryDailyService(@Value("${openai.api.key}") String apiKey, TaskService taskService) {
         this.openAiService = new OpenAiService(apiKey);
         this.taskService = taskService;
     }

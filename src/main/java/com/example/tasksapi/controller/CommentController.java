@@ -1,6 +1,6 @@
 package com.example.tasksapi.controller;
 
-import com.example.tasksapi.domain.Comment;
+import com.example.tasksapi.domain.task.Comment;
 import com.example.tasksapi.dto.ApiResponseDTO;
 import com.example.tasksapi.dto.CreateCommentRequestDTO;
 import com.example.tasksapi.service.task.CommentService;

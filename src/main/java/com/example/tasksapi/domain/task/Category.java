@@ -1,5 +1,6 @@
-package com.example.tasksapi.domain;
+package com.example.tasksapi.domain.task;
 
+import com.example.tasksapi.domain.User;
 import com.example.tasksapi.domain.contracts.HexColor;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;

@@ -1,9 +1,8 @@
-package com.example.tasksapi.service;
+package com.example.tasksapi.service.user;
 
 import com.example.tasksapi.auth.JwtService;
 import com.example.tasksapi.domain.User;
 import com.example.tasksapi.repository.UserRepository;
-import com.example.tasksapi.service.pomodoro.PomodoroService;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -11,27 +10,23 @@ import java.util.Optional;
 @Service
 public class UserService {
 
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
-    private JwtService jwtService;
+    private final JwtService jwtService;
 
-    private PomodoroService pomodoroService;
 
-    public UserService(UserRepository userRepository, JwtService jwtService, PomodoroService pomodoroService) {
+    public UserService(UserRepository userRepository, JwtService jwtService) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
-        this.pomodoroService = pomodoroService;
     }
 
-    public void registerUser(User user) {
-        User savedUser =  userRepository.save(user);
-        pomodoroService.createDefaultPomodoroPreferences(savedUser);
+    public User registerUser(User user) {
+        return userRepository.save(user);
     }
 
     public boolean userExists(String username, String email) {
         boolean usernameExists = userRepository.existsByUsername(username);
         boolean emailExists = userRepository.existsByEmail(email);
-
         return usernameExists && emailExists;
     }
 

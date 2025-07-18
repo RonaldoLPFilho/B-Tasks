@@ -1,5 +1,6 @@
-package com.example.tasksapi.domain;
+package com.example.tasksapi.domain.task;
 
+import com.example.tasksapi.domain.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;

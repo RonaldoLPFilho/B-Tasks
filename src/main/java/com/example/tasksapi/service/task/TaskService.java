@@ -1,14 +1,13 @@
 package com.example.tasksapi.service.task;
 
-import com.example.tasksapi.domain.Category;
-import com.example.tasksapi.domain.Task;
+import com.example.tasksapi.domain.task.Category;
+import com.example.tasksapi.domain.task.Task;
 import com.example.tasksapi.domain.User;
 import com.example.tasksapi.dto.TaskDTO;
 import com.example.tasksapi.exception.InvalidDataException;
 import com.example.tasksapi.exception.NotFoundException;
 import com.example.tasksapi.repository.TaskRepository;
-import com.example.tasksapi.service.CategoryService;
-import com.example.tasksapi.service.UserService;
+import com.example.tasksapi.service.user.UserService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;

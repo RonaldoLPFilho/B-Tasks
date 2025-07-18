@@ -1,6 +1,6 @@
-package com.example.tasksapi.controller;
+package com.example.tasksapi.controller.task;
 
-import com.example.tasksapi.domain.Task;
+import com.example.tasksapi.domain.task.Task;
 import com.example.tasksapi.dto.ApiResponseDTO;
 import com.example.tasksapi.dto.TaskDTO;
 import com.example.tasksapi.service.task.TaskService;

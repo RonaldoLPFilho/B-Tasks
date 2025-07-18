@@ -1,5 +1,8 @@
 package com.example.tasksapi.domain;
 
+import com.example.tasksapi.domain.pomodoro.PomodoroPreferences;
+import com.example.tasksapi.domain.task.Category;
+import com.example.tasksapi.domain.task.Task;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;

@@ -1,12 +1,12 @@
-package com.example.tasksapi.service;
+package com.example.tasksapi.service.task;
 
-import com.example.tasksapi.domain.Category;
+import com.example.tasksapi.domain.task.Category;
 import com.example.tasksapi.domain.User;
 import com.example.tasksapi.dto.CategoryDTO;
 import com.example.tasksapi.exception.InvalidDataException;
 import com.example.tasksapi.exception.NotFoundException;
 import com.example.tasksapi.repository.CategoryRepository;
-import com.example.tasksapi.repository.TaskRepository;
+import com.example.tasksapi.service.user.UserService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

@@ -1,10 +1,10 @@
-package com.example.tasksapi.controller;
+package com.example.tasksapi.controller.task;
 
-import com.example.tasksapi.domain.Category;
+import com.example.tasksapi.domain.task.Category;
 
 import com.example.tasksapi.dto.ApiResponseDTO;
 import com.example.tasksapi.dto.CategoryDTO;
-import com.example.tasksapi.service.CategoryService;
+import com.example.tasksapi.service.task.CategoryService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

@@ -1,8 +1,8 @@
 package com.example.tasksapi.service.task;
 
 
-import com.example.tasksapi.domain.Subtask;
-import com.example.tasksapi.domain.Task;
+import com.example.tasksapi.domain.task.Subtask;
+import com.example.tasksapi.domain.task.Task;
 import com.example.tasksapi.dto.CreateSubstaskRequestDTO;
 import com.example.tasksapi.exception.InvalidDataException;
 import com.example.tasksapi.exception.NotFoundException;

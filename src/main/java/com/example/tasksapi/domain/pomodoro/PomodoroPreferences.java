@@ -1,5 +1,6 @@
-package com.example.tasksapi.domain;
+package com.example.tasksapi.domain.pomodoro;
 
+import com.example.tasksapi.domain.User;
 import jakarta.persistence.*;
 
 import java.util.UUID;

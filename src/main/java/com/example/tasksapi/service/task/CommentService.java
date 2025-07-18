@@ -1,7 +1,7 @@
 package com.example.tasksapi.service.task;
 
-import com.example.tasksapi.domain.Comment;
-import com.example.tasksapi.domain.Task;
+import com.example.tasksapi.domain.task.Comment;
+import com.example.tasksapi.domain.task.Task;
 import com.example.tasksapi.dto.CreateCommentRequestDTO;
 import com.example.tasksapi.exception.InvalidDataException;
 import com.example.tasksapi.repository.CommentRepository;

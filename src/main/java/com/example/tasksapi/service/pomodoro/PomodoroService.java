@@ -1,11 +1,12 @@
 package com.example.tasksapi.service.pomodoro;
 
-import com.example.tasksapi.domain.PomodoroPreferences;
+import com.example.tasksapi.domain.pomodoro.PomodoroPreferences;
 import com.example.tasksapi.domain.User;
 import com.example.tasksapi.dto.CreatePomodoroPreferenceDTO;
 import com.example.tasksapi.exception.NotFoundException;
 import com.example.tasksapi.repository.PomodoroPreferencesRepository;
-import com.example.tasksapi.service.UserService;
+import com.example.tasksapi.service.user.UserService;
+import com.example.tasksapi.utils.UserUtils;
 import org.springframework.stereotype.Service;
 
 
@@ -38,9 +39,8 @@ public class PomodoroService {
         return pomodoroPreferencesRepository.findByUserId(user.getId());
     }
 
-    public PomodoroPreferences updatePomodoroPreferences(CreatePomodoroPreferenceDTO dto, String token) {
-        User user =  userService.extractEmailFromTokenAndReturnUser(token)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+    public PomodoroPreferences updatePomodoroPreferences(CreatePomodoroPreferenceDTO dto) {
+        User user = UserUtils.getCurrentUser();
 
         PomodoroPreferences preferences = new PomodoroPreferences(
                 user,
