@@ -32,9 +32,8 @@ public class PomodoroService {
         pomodoroPreferencesRepository.save(pomodoroPreferences);
     }
 
-    public PomodoroPreferences getPomodoroPreferences(String token) {
-        User user =  userService.extractEmailFromTokenAndReturnUser(token)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+    public PomodoroPreferences getPomodoroPreferences() {
+        User user = UserUtils.getCurrentUser();
 
         return pomodoroPreferencesRepository.findByUserId(user.getId());
     }

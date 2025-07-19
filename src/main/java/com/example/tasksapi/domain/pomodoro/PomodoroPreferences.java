@@ -1,6 +1,7 @@
 package com.example.tasksapi.domain.pomodoro;
 
 import com.example.tasksapi.domain.User;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import java.util.UUID;
@@ -21,6 +22,7 @@ public class PomodoroPreferences {
     private String alarmSound;
 
     @OneToOne
+    @JsonBackReference
     private User user;
 
     public PomodoroPreferences(User user, int sessionDuration, int breakDuration, String alarmSound) {
