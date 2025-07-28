@@ -1,7 +1,5 @@
 package com.example.tasksapi.dto;
 
-import com.example.tasksapi.domain.Category;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
 

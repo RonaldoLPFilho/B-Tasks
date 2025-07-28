@@ -1,5 +1,8 @@
 package com.example.tasksapi.domain;
 
+import com.example.tasksapi.domain.pomodoro.PomodoroPreferences;
+import com.example.tasksapi.domain.task.Category;
+import com.example.tasksapi.domain.task.Task;
 import jakarta.persistence.*;
 
 import java.util.ArrayList;
@@ -27,6 +30,9 @@ public class User extends Auditable {
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Category> categories;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private PomodoroPreferences pomodoroPreferences;
 
     public User() {
         super();
@@ -81,5 +87,13 @@ public class User extends Auditable {
 
     public void setCategories(List<Category> categories) {
         this.categories = categories;
+    }
+
+    public PomodoroPreferences getPomodoroPreferences() {
+        return pomodoroPreferences;
+    }
+
+    public void setPomodoroPreferences(PomodoroPreferences pomodoroPreferences) {
+        this.pomodoroPreferences = pomodoroPreferences;
     }
 }

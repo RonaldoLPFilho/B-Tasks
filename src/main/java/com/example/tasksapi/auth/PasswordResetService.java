@@ -5,7 +5,7 @@ import com.example.tasksapi.domain.User;
 import com.example.tasksapi.exception.InvalidDataException;
 import com.example.tasksapi.exception.NotFoundException;
 import com.example.tasksapi.repository.PasswordResetTokenRepository;
-import com.example.tasksapi.service.UserService;
+import com.example.tasksapi.service.user.UserService;
 import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

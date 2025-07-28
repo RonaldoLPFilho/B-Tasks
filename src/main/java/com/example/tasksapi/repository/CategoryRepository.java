@@ -1,6 +1,6 @@
 package com.example.tasksapi.repository;
 
-import com.example.tasksapi.domain.Category;
+import com.example.tasksapi.domain.task.Category;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -6,7 +6,8 @@ import com.example.tasksapi.dto.LoginResponseDTO;
 import com.example.tasksapi.dto.UserDTO;
 import com.example.tasksapi.exception.NotFoundException;
 import com.example.tasksapi.exception.UnauthorizedException;
-import com.example.tasksapi.service.UserService;
+import com.example.tasksapi.service.user.UserRegistrationService;
+import com.example.tasksapi.service.user.UserService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -17,21 +18,17 @@ public class AuthService {
     private final UserService userService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final UserRegistrationService userRegistrationService;
 
-    public AuthService(UserService userService, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public AuthService(UserService userService, PasswordEncoder passwordEncoder, JwtService jwtService, UserRegistrationService userRegistrationService) {
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.userRegistrationService = userRegistrationService;
     }
 
     public boolean register(UserDTO dto) {
-        if(userService.userExists(dto.username(), dto.email())) {
-            return false;
-        }
-        String encryptedPassword = passwordEncoder.encode(dto.password());
-        User user = new User(dto.username(), dto.email(), encryptedPassword);
-        userService.registerUser(user);
-        return true;
+        return userRegistrationService.registerUser(dto);
     }
 
     public LoginResponseDTO login(LoginDTO dto) {
@@ -54,7 +51,4 @@ public class AuthService {
 
         return responseDTO;
     }
-
-
-
 }

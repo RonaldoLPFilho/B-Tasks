@@ -1,7 +1,7 @@
 package com.example.tasksapi.auth;
 
 import com.example.tasksapi.domain.User;
-import com.example.tasksapi.service.UserService;
+import com.example.tasksapi.service.user.UserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

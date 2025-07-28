@@ -1,9 +1,9 @@
 package com.example.tasksapi.controller;
 
-import com.example.tasksapi.domain.Comment;
+import com.example.tasksapi.domain.task.Comment;
 import com.example.tasksapi.dto.ApiResponseDTO;
 import com.example.tasksapi.dto.CreateCommentRequestDTO;
-import com.example.tasksapi.service.CommentService;
+import com.example.tasksapi.service.task.CommentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
