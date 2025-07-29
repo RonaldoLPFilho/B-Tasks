@@ -3,6 +3,7 @@ package com.example.tasksapi.service.user;
 import com.example.tasksapi.auth.JwtService;
 import com.example.tasksapi.domain.User;
 import com.example.tasksapi.repository.UserRepository;
+import com.example.tasksapi.utils.UserUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -41,5 +42,10 @@ public class UserService {
     public Optional<User> extractEmailFromTokenAndReturnUser(String token){
         String email = jwtService.extractEmail(token);
         return userRepository.findByEmail(email);
+    }
+
+    public String extractEmailFromContext(){
+        User user = UserUtils.getCurrentUser();
+        return user.getEmail();
     }
 }
