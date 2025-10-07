@@ -12,6 +12,14 @@ import java.util.UUID;
 
 
 @Entity
+@Table(name = "task",
+        indexes = {
+                @Index(name = "idx_task_user", columnList = "user_id")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(name = "ux_task_user_sort", columnNames = {"user_id", "sort_order"})
+        }
+)
 public class Task extends Auditable {
     @Id
     @GeneratedValue
@@ -46,6 +54,9 @@ public class Task extends Auditable {
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JsonManagedReference
     private List<Comment> comments;
+
+    @Column(name = "sort_order", nullable = false)
+    private Integer sortOrder = 0;
 
     public Task() {
 
@@ -132,5 +143,13 @@ public class Task extends Auditable {
 
     public List<Comment> getComments() {
         return comments;
+    }
+
+    public Integer getSortOrder() {
+        return sortOrder;
+    }
+
+    public void setSortOrder(Integer sortOrder) {
+        this.sortOrder = sortOrder;
     }
 }
