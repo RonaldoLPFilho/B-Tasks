@@ -34,6 +34,9 @@ public class User extends Auditable {
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private PomodoroPreferences pomodoroPreferences;
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private UserLanguagePreference userLanguagePreference;
+
     public User() {
         super();
     }
@@ -95,5 +98,13 @@ public class User extends Auditable {
 
     public void setPomodoroPreferences(PomodoroPreferences pomodoroPreferences) {
         this.pomodoroPreferences = pomodoroPreferences;
+    }
+
+    public UserLanguagePreference getResumeLanguage() {
+        return userLanguagePreference;
+    }
+
+    public void setResumeLanguage(UserLanguagePreference userLanguagePreference) {
+        this.userLanguagePreference = userLanguagePreference;
     }
 }

@@ -11,11 +11,13 @@ public class UserRegistrationService {
     private final UserService userService;
     private final PomodoroService pomodoroService;
     private final PasswordEncoder passwordEncoder;
+    private final UserLanguagePreferenceService userLanguagePreferenceService;
 
-    public UserRegistrationService(UserService userService, PomodoroService pomodoroService, PasswordEncoder passwordEncoder) {
+    public UserRegistrationService(UserService userService, PomodoroService pomodoroService, PasswordEncoder passwordEncoder, UserLanguagePreferenceService userLanguagePreferenceService) {
         this.userService = userService;
         this.pomodoroService = pomodoroService;
         this.passwordEncoder = passwordEncoder;
+        this.userLanguagePreferenceService = userLanguagePreferenceService;
     }
 
     public boolean registerUser(UserDTO dto) {
@@ -27,6 +29,7 @@ public class UserRegistrationService {
         User user = new User(dto.username(), dto.email(), encryptedPassword);
         User savedUser = userService.registerUser(user);
         pomodoroService.createDefaultPomodoroPreferences(savedUser);
+        userLanguagePreferenceService.createDefaultLanguagePreferences(savedUser);
 
         return true;
     }

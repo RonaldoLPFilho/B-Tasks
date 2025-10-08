@@ -2,6 +2,7 @@ package com.example.tasksapi.controller.task;
 
 import com.example.tasksapi.domain.task.Task;
 import com.example.tasksapi.dto.ApiResponseDTO;
+import com.example.tasksapi.dto.ReorderTasksRequest;
 import com.example.tasksapi.dto.TaskDTO;
 import com.example.tasksapi.service.task.TaskService;
 import org.springframework.http.HttpStatus;
@@ -64,5 +65,12 @@ public class TaskController {
     public ResponseEntity<ApiResponseDTO<UUID>> completeTask(@PathVariable UUID taskId, @PathVariable boolean completed) {
         taskService.updateCompleted(taskId, completed);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task completed", taskId));
+    }
+
+    @PatchMapping("/reorder")
+    public ResponseEntity<Void> reorder(@RequestBody ReorderTasksRequest body, @RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.substring(7);
+        taskService.reorder(token, body.orderedIds());
+        return ResponseEntity.noContent().build();
     }
 }
