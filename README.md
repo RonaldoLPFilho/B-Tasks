@@ -1,3 +1,6 @@
+**[AINDA EM DESENVOLVIMENTO - NOVAS FEATURES SENDO IMPLEMENTADAS, WIKI DESATUALIZADA]**
+
+
 📝 Projeto: Tasks App – Gerenciador de Tarefas com Autenticação
 
 Projeto de estudos práticos:
