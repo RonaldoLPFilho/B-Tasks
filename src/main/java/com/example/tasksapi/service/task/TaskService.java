@@ -125,6 +125,23 @@ public class TaskService {
         }
     }
 
+    @Transactional
+    public void disableTask(UUID taskId){
+        Task task = findById(taskId);
+        task.setActive(false);
+
+        taskRepository.save(task);
+    }
+
+
+    @Transactional
+    public void activeTask(UUID taskId){
+        Task task = findById(taskId);
+        task.setActive(true);
+
+        taskRepository.save(task);
+    }
+
     private Set<UUID> asSet(List<UUID> list) {
         return new HashSet<>(list);
     }
