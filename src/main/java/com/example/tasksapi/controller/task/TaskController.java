@@ -77,7 +77,7 @@ public class TaskController {
     @PatchMapping("/disable/{taskId}")
     public ResponseEntity<ApiResponseDTO<Void>> disableTask(@PathVariable UUID taskId) {
         taskService.disableTask(taskId);
-        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task archived",  null));
+        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task disabled",  null));
     }
 
     @PatchMapping("/active/{taskId}")
