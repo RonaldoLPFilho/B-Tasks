@@ -58,6 +58,9 @@ public class Task extends Auditable {
     @Column(name = "sort_order", nullable = false)
     private Integer sortOrder = 0;
 
+    @Column(name = "active", nullable = false)
+    private boolean active;
+
     public Task() {
 
     }
@@ -71,6 +74,7 @@ public class Task extends Auditable {
         Task.this.jiraId = jiraId;
         this.category = category;
         this.subtasks = new ArrayList<>();
+        this.active = true;
     }
 
     public UUID getId() {
@@ -151,5 +155,13 @@ public class Task extends Auditable {
 
     public void setSortOrder(Integer sortOrder) {
         this.sortOrder = sortOrder;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }

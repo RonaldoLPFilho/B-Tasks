@@ -73,4 +73,16 @@ public class TaskController {
         taskService.reorder(token, body.orderedIds());
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/disable/{taskId}")
+    public ResponseEntity<ApiResponseDTO<Void>> disableTask(@PathVariable UUID taskId) {
+        taskService.disableTask(taskId);
+        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task disabled",  null));
+    }
+
+    @PatchMapping("/active/{taskId}")
+    public ResponseEntity<ApiResponseDTO<Void>> activateTask(@PathVariable UUID taskId) {
+        taskService.activeTask(taskId);
+        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task activated",  null));
+    }
 }
