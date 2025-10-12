@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -13,16 +14,17 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "task",
-        indexes = {
-                @Index(name = "idx_task_user", columnList = "user_id")
-        },
-        uniqueConstraints = {
-                @UniqueConstraint(name = "ux_task_user_sort", columnNames = {"user_id", "sort_order"})
-        }
+    indexes = {
+            @Index(name = "idx_task_user", columnList = "user_id"),
+            @Index(name = "idx_task_tab", columnList = "tab_id"),
+            @Index(name = "idx_task_archive", columnList = "active, archived_at, archive_expires_at")
+    },
+    uniqueConstraints = {
+            @UniqueConstraint(name = "ux_task_user_sort", columnNames = {"user_id", "tab_id" , "sort_order"})
+    }
 )
 public class Task extends Auditable {
-    @Id
-    @GeneratedValue
+    @Id @GeneratedValue
     @Column(columnDefinition = "uuid")
     private UUID id;
 
@@ -41,6 +43,10 @@ public class Task extends Auditable {
 
     @Column(nullable = true)
     private String jiraId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tab_id", foreignKey = @ForeignKey(name = "fk_task_tab"))
+    private Tab tab;
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
@@ -61,6 +67,12 @@ public class Task extends Auditable {
     @Column(name = "active", nullable = false)
     private boolean active;
 
+    @Column(name = "archived_at")
+    OffsetDateTime archivedAt;
+
+    @Column(name = "archive_expires_at")
+    OffsetDateTime archiveExpiresAt;
+
     public Task() {
 
     }
@@ -75,6 +87,17 @@ public class Task extends Auditable {
         this.category = category;
         this.subtasks = new ArrayList<>();
         this.active = true;
+    }
+
+    public void archiveForMonths(short months) {
+        this.active = false;
+        this.archivedAt = OffsetDateTime.now();
+        this.archiveExpiresAt = this.archivedAt.plusMonths(months);
+        this.tab = null; // solta vinculo com a tab;
+    }
+
+    public boolean isArchivedExpired(OffsetDateTime now){
+        return !this.active && this.archiveExpiresAt != null && !now.isBefore(this.archiveExpiresAt);
     }
 
     public UUID getId() {
@@ -163,5 +186,29 @@ public class Task extends Auditable {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public Tab getTab() {
+        return tab;
+    }
+
+    public void setTab(Tab tab) {
+        this.tab = tab;
+    }
+
+    public OffsetDateTime getArchivedAt() {
+        return archivedAt;
+    }
+
+    public void setArchivedAt(OffsetDateTime archivedAt) {
+        this.archivedAt = archivedAt;
+    }
+
+    public OffsetDateTime getArchiveExpiresAt() {
+        return archiveExpiresAt;
+    }
+
+    public void setArchiveExpiresAt(OffsetDateTime archiveExpiresAt) {
+        this.archiveExpiresAt = archiveExpiresAt;
     }
 }
