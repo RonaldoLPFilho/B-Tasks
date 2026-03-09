@@ -3,4 +3,4 @@ package com.example.tasksapi.dto;
 import java.util.List;
 import java.util.UUID;
 
-public record ReorderTasksRequest(UUID tabId, List<UUID> orderedIds) {}
+public record ReorderSectionsRequest(List<UUID> orderedIds) {}

@@ -10,6 +10,7 @@ public class TaskDTO {
     private LocalDateTime createDate;
     private LocalDateTime finishDate;
     private String jiraId;
+    private UUID tabId;
     private UUID categoryId;
 
     public String getTitle() {
@@ -36,6 +37,16 @@ public class TaskDTO {
         return jiraId;
     }
 
-    public UUID getCategoryId() {return categoryId;}
+    public UUID getTabId() {
+        return tabId;
+    }
+
+    public void setTabId(UUID tabId) {
+        this.tabId = tabId;
+    }
+
+    public UUID getCategoryId() {
+        return categoryId;
+    }
 
 }

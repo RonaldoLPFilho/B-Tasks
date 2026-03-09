@@ -1,8 +1,10 @@
 package com.example.tasksapi.domain.task;
 
 import com.example.tasksapi.domain.*;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
@@ -14,10 +16,12 @@ import java.util.UUID;
 @Entity
 @Table(name = "task",
         indexes = {
-                @Index(name = "idx_task_user", columnList = "user_id")
+                @Index(name = "idx_task_user", columnList = "user_id"),
+                @Index(name = "idx_task_section", columnList = "section_id"),
+                @Index(name = "idx_task_tab", columnList = "tab_id")
         },
         uniqueConstraints = {
-                @UniqueConstraint(name = "ux_task_user_sort", columnNames = {"user_id", "sort_order"})
+                @UniqueConstraint(name = "ux_task_section_sort", columnNames = {"section_id", "sort_order"})
         }
 )
 public class Task extends Auditable {
@@ -43,6 +47,16 @@ public class Task extends Auditable {
     private String jiraId;
 
     @ManyToOne
+    @JoinColumn(name = "section_id")
+    @JsonBackReference
+    private Section section;
+
+    @ManyToOne
+    @JoinColumn(name = "tab_id")
+    @JsonIgnore
+    private Tab tab;
+
+    @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     @JsonIgnore
     private User user;
@@ -65,11 +79,12 @@ public class Task extends Auditable {
 
     }
 
-    public Task(String title, String description, User user, String jiraId, Category category) {
+    public Task(String title, String description, User user, Section section, String jiraId, Category category) {
         this.title = title;
         this.description = description;
         this.finishedAt = null;
         this.user = user;
+        this.section = section;
         this.completed = false;
         Task.this.jiraId = jiraId;
         this.category = category;
@@ -111,6 +126,35 @@ public class Task extends Auditable {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public Section getSection() {
+        return section;
+    }
+
+    public void setSection(Section section) {
+        this.section = section;
+    }
+
+    public Tab getTab() {
+        return tab;
+    }
+
+    public void setTab(Tab tab) {
+        this.tab = tab;
+    }
+
+    @JsonProperty("tabId")
+    public UUID getTabId() {
+        if (section != null && section.getTab() != null) {
+            return section.getTab().getId();
+        }
+        return tab != null ? tab.getId() : null;
+    }
+
+    @JsonProperty("sectionId")
+    public UUID getSectionId() {
+        return section != null ? section.getId() : null;
     }
 
     public LocalDate getFinishDate(){

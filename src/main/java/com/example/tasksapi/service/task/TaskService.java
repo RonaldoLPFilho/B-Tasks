@@ -1,8 +1,10 @@
 package com.example.tasksapi.service.task;
 
 import com.example.tasksapi.domain.task.Category;
+import com.example.tasksapi.domain.task.Section;
 import com.example.tasksapi.domain.task.Task;
 import com.example.tasksapi.domain.User;
+import com.example.tasksapi.dto.SectionTaskReorderRequest;
 import com.example.tasksapi.dto.TaskDTO;
 import com.example.tasksapi.exception.InvalidDataException;
 import com.example.tasksapi.exception.NotFoundException;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.*;
+import java.util.function.Function;
 
 @Service
 public class TaskService {
@@ -20,20 +23,31 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final UserService userService;
     private final CategoryService categoryService;
+    private final TabService tabService;
+    private final SectionService sectionService;
 
-    public TaskService(TaskRepository taskRepository, UserService userService, CategoryService categoryService) {
+    public TaskService(TaskRepository taskRepository, UserService userService, CategoryService categoryService,
+                       TabService tabService, SectionService sectionService) {
         this.taskRepository = taskRepository;
         this.userService = userService;
         this.categoryService = categoryService;
+        this.tabService = tabService;
+        this.sectionService = sectionService;
     }
 
     public List<Task> findAllByToken(String token){
         User user = userService.extractEmailFromTokenAndReturnUser(token)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
-        return taskRepository.findByUserId(user.getId()).stream()
-                .sorted(Comparator.comparingInt(Task::getSortOrder))
-                .toList();
+        return taskRepository.findByUserIdOrderBySortOrderAsc(user.getId());
+    }
+
+    public List<Task> findByTabId(UUID tabId) {
+        List<Task> bySection = taskRepository.findBySection_Tab_IdOrderBySortOrderAsc(tabId);
+        if (!bySection.isEmpty()) {
+            return bySection;
+        }
+        return taskRepository.findByTab_IdOrderBySortOrderAsc(tabId);
     }
 
     public Task findById(UUID id){
@@ -46,16 +60,25 @@ public class TaskService {
         User user = userService.extractEmailFromTokenAndReturnUser(token)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
-        Category category = categoryService.findById(dto.getCategoryId());
+        if (dto.getTabId() == null) {
+            throw new InvalidDataException("Tab is required for creating a task");
+        }
 
-        Task task = new Task(dto.getTitle(), dto.getDescription(), user, dto.getJiraId(), category);
+        tabService.findByIdAndValidateOwnership(dto.getTabId(), user.getId());
+        Section geralSection = sectionService.findGeralSectionByTabId(dto.getTabId(), token);
+
+        Category category = null;
+        if (dto.getCategoryId() != null) {
+            category = categoryService.findById(dto.getCategoryId());
+        }
+
+        Task task = new Task(dto.getTitle(), dto.getDescription(), user, geralSection, dto.getJiraId(), category);
 
         if(!isValidTask(task)){
             throw new InvalidDataException("Invalid task");
         }
 
-        taskRepository.bumpAllOrders(user.getId());
-
+        taskRepository.bumpAllOrdersBySectionId(geralSection.getId());
         task.setSortOrder(0);
 
         return taskRepository.save(task);
@@ -107,22 +130,74 @@ public class TaskService {
     }
 
     @Transactional
-    public void reorder(String token, List<UUID> orderedIds) {
+    public void reorder(String token, SectionTaskReorderRequest request) {
         User user = userService.extractEmailFromTokenAndReturnUser(token)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
-        List<UUID> current = taskRepository.listIdsByUserId(user.getId());
-        if (current.size() != orderedIds.size()) {
-            throw new InvalidDataException("List size mismatch");
-        }
-        if (!asSet(current).equals(asSet(orderedIds))) {
-            throw new InvalidDataException("IDs don't belong to user or are duplicated");
+        if (request.tabId() == null) {
+            throw new InvalidDataException("Tab is required for reordering tasks");
         }
 
-        // Atribui índices sequenciais
-        for (int i = 0; i < orderedIds.size(); i++) {
-            taskRepository.updateOrder(orderedIds.get(i), i);
+        tabService.findByIdAndValidateOwnership(request.tabId(), user.getId());
+
+        if (request.sectionUpdates() == null || request.sectionUpdates().isEmpty()) {
+            throw new InvalidDataException("Section updates are required");
         }
+
+        Set<UUID> allTabTaskIds = new HashSet<>();
+        for (Section s : sectionService.findByTabId(request.tabId(), token)) {
+            allTabTaskIds.addAll(taskRepository.listIdsBySectionId(s.getId()));
+        }
+        allTabTaskIds.addAll(taskRepository.listIdsByTabId(request.tabId()));
+        Set<UUID> receivedIds = new HashSet<>();
+        for (SectionTaskReorderRequest.SectionUpdate update : request.sectionUpdates()) {
+            for (UUID id : update.orderedIds()) {
+                if (!allTabTaskIds.contains(id)) {
+                    throw new InvalidDataException("IDs don't belong to tab");
+                }
+                if (!receivedIds.add(id)) {
+                    throw new InvalidDataException("Task IDs must not be duplicated across sections");
+                }
+            }
+        }
+        if (!receivedIds.equals(allTabTaskIds)) {
+            throw new InvalidDataException("All tasks must be assigned to a section");
+        }
+
+        Map<UUID, Task> tasksById = taskRepository.findAllById(receivedIds).stream()
+                .collect(java.util.stream.Collectors.toMap(Task::getId, Function.identity()));
+        Map<UUID, Section> sectionsById = new HashMap<>();
+
+        int tempOrder = -receivedIds.size();
+        for (SectionTaskReorderRequest.SectionUpdate update : request.sectionUpdates()) {
+            Section section = sectionsById.computeIfAbsent(
+                    update.sectionId(),
+                    sectionId -> sectionService.findByIdAndValidateTab(sectionId, request.tabId(), user.getId())
+            );
+
+            for (UUID taskId : update.orderedIds()) {
+                Task task = tasksById.get(taskId);
+                if (task == null) {
+                    throw new InvalidDataException("Task not found for reordering");
+                }
+
+                task.setSection(section);
+                task.setSortOrder(tempOrder++);
+            }
+        }
+
+        taskRepository.saveAll(tasksById.values());
+        taskRepository.flush();
+
+        for (SectionTaskReorderRequest.SectionUpdate update : request.sectionUpdates()) {
+            for (int i = 0; i < update.orderedIds().size(); i++) {
+                Task task = tasksById.get(update.orderedIds().get(i));
+                task.setSortOrder(i);
+            }
+        }
+
+        taskRepository.saveAll(tasksById.values());
+        taskRepository.flush();
     }
 
     @Transactional
@@ -141,11 +216,6 @@ public class TaskService {
 
         taskRepository.save(task);
     }
-
-    private Set<UUID> asSet(List<UUID> list) {
-        return new HashSet<>(list);
-    }
-
 
     private boolean isValidTask(Task task){
         return task.getTitle() != null &&

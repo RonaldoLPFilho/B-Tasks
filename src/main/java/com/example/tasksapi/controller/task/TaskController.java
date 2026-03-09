@@ -2,7 +2,7 @@ package com.example.tasksapi.controller.task;
 
 import com.example.tasksapi.domain.task.Task;
 import com.example.tasksapi.dto.ApiResponseDTO;
-import com.example.tasksapi.dto.ReorderTasksRequest;
+import com.example.tasksapi.dto.SectionTaskReorderRequest;
 import com.example.tasksapi.dto.TaskDTO;
 import com.example.tasksapi.service.task.TaskService;
 import org.springframework.http.HttpStatus;
@@ -24,11 +24,15 @@ public class TaskController {
     }
 
     @GetMapping()
-    public ResponseEntity<ApiResponseDTO<List<Task>>> getAllTasks(@RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<ApiResponseDTO<List<Task>>> getAllTasks(
+            @RequestHeader("Authorization") String authHeader,
+            @RequestParam(required = false) UUID tabId) {
 
         String token = authHeader.substring(7);
 
-        List<Task> data = taskService.findAllByToken(token);
+        List<Task> data = tabId != null
+                ? taskService.findByTabId(tabId)
+                : taskService.findAllByToken(token);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Tasks", data));
     }
 
@@ -68,9 +72,9 @@ public class TaskController {
     }
 
     @PatchMapping("/reorder")
-    public ResponseEntity<Void> reorder(@RequestBody ReorderTasksRequest body, @RequestHeader("Authorization") String authHeader) {
+    public ResponseEntity<Void> reorder(@RequestBody SectionTaskReorderRequest body, @RequestHeader("Authorization") String authHeader) {
         String token = authHeader.substring(7);
-        taskService.reorder(token, body.orderedIds());
+        taskService.reorder(token, body);
         return ResponseEntity.noContent().build();
     }
 
