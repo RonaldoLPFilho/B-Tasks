@@ -579,6 +579,69 @@ POST /api/pomodoro/state/acknowledge
 
 ---
 
+## Endpoints: Lofi Radio
+
+Base path: `/api/lofi`
+
+### Listar rádios disponíveis
+
+```
+GET /api/lofi/radios
+```
+
+Retorna o catálogo fixo de rádios e faixas configuradas em código.
+
+**Rádios disponíveis inicialmente:**
+- `Lofi Brasileiro`
+- `Lofi HipHop`
+- `Radio Mix`
+
+**Response 200:**
+```json
+{
+  "status": "SUCCESS",
+  "message": "lofi radios available",
+  "data": [
+    {
+      "id": "lofi-brasileiro",
+      "name": "Lofi Brasileiro",
+      "slug": "brasileiro",
+      "tracks": [
+        {
+          "id": "lofi-brasileiro-1",
+          "title": "Lofi Brasileiro 1",
+          "file": "LoFi-brasileiro-1.mp3",
+          "url": "/lofi/brasileiro/LoFi-brasileiro-1.mp3",
+          "order": 1
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Arquivos de áudio
+
+Os MP3s são servidos publicamente em:
+
+```
+GET /lofi/{radioSlug}/{fileName}
+```
+
+Exemplo:
+
+```
+GET /lofi/radiomix/RadioMix-1.mp3
+```
+
+**Comportamento esperado no frontend:**
+- seleção de rádio pelo catálogo retornado pela API
+- loop infinito entre as faixas da rádio selecionada
+- suporte a play/pause, avanço/retrocesso de tempo, troca de faixa e volume
+- interrupção temporária da rádio quando o alarme do pomodoro entrar em execução
+
+---
+
 ## Migração de Dados Existentes
 
 Na primeira execução após o deploy:

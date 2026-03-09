@@ -70,8 +70,10 @@ public class PomodoroService {
         PomodoroPreferences savedPreferences = pomodoroPreferencesRepository.save(preferences);
 
         PomodoroTimerState state = getOrCreatePomodoroTimerState(user, savedPreferences);
-        if (state.getStatus() == PomodoroStatus.IDLE) {
+        if (state.getStatus() != PomodoroStatus.RUNNING && state.getStatus() != PomodoroStatus.ALARM) {
             state.setRemainingSeconds(getDurationForMode(state.getMode(), savedPreferences));
+            state.setStartedAt(null);
+            state.setEndsAt(null);
             pomodoroTimerStateRepository.save(state);
         }
 
@@ -251,12 +253,19 @@ public class PomodoroService {
     }
 
     private PomodoroTimerStateDTO toStateDto(PomodoroTimerState state, PomodoroPreferences preferences) {
+        int expectedSeconds = getDurationForMode(state.getMode(), preferences);
         int remainingSeconds = state.getStatus() == PomodoroStatus.RUNNING
                 ? calculateRemainingSeconds(state)
                 : state.getRemainingSeconds();
 
         if (state.getStatus() == PomodoroStatus.IDLE && remainingSeconds <= 0) {
-            remainingSeconds = getDurationForMode(state.getMode(), preferences);
+            remainingSeconds = expectedSeconds;
+        }
+
+        if (state.getStatus() != PomodoroStatus.RUNNING
+                && state.getStatus() != PomodoroStatus.ALARM
+                && (remainingSeconds <= 0 || remainingSeconds > expectedSeconds)) {
+            remainingSeconds = expectedSeconds;
         }
 
         return new PomodoroTimerStateDTO(
