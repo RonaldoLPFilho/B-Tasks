@@ -17,12 +17,24 @@ public class TaskDTO {
         return title;
     }
 
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
     public String getDescription() {
         return description;
     }
 
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
     public boolean isCompleted() {
         return completed;
+    }
+
+    public void setCompleted(boolean completed) {
+        this.completed = completed;
     }
 
     public LocalDateTime getCreateDate() {
@@ -37,6 +49,10 @@ public class TaskDTO {
         return jiraId;
     }
 
+    public void setJiraId(String jiraId) {
+        this.jiraId = jiraId;
+    }
+
     public UUID getTabId() {
         return tabId;
     }
@@ -47,6 +63,10 @@ public class TaskDTO {
 
     public UUID getCategoryId() {
         return categoryId;
+    }
+
+    public void setCategoryId(UUID categoryId) {
+        this.categoryId = categoryId;
     }
 
 }

@@ -14,12 +14,17 @@ public class PomodoroAlarmSoundService {
 
         sounds.add(new PomodoroSoundOption("Aplausos", "aplausos.wav", "/alarms/aplausos.wav"));
         sounds.add(new PomodoroSoundOption("Alarme Suspense", "alarm-suspense.wav", "/alarms/alarm-suspense.wav"));
-        sounds.add(new PomodoroSoundOption("Epic Orquestra", "epic-orchestra.wav", "/alarms/epic-orchestra.wav"));
-        sounds.add(new PomodoroSoundOption("Retro game alarme", "retro-game-emergency-alarm.wav", "/alarms/retro-game-emergency-alarm.wav"));
-        sounds.add(new PomodoroSoundOption("Tick Tock mané", "tick-tock-clock-timer.wav", "/alarms/tick-tock-clock-timer.wav"));
+        sounds.add(new PomodoroSoundOption("Epic Orquestra", "epic-orchestra-transition.wav", "/alarms/epic-orchestra-transition.wav"));
+        sounds.add(new PomodoroSoundOption("Retro Game", "retro-game-emergency-alarm.wav", "/alarms/retro-game-emergency-alarm.wav"));
+        sounds.add(new PomodoroSoundOption("Tick Tock", "tick-tock-clock-timer.wav", "/alarms/tick-tock-clock-timer.wav"));
 
 
         return sounds;
+    }
+
+    public boolean isValidSoundFile(String fileName) {
+        return listAvailableSounds().stream()
+                .anyMatch(sound -> sound.file().equals(fileName));
     }
 
 }

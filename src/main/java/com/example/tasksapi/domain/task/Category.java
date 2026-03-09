@@ -27,6 +27,9 @@ public class Category {
     @HexColor
     private String color;
 
+    @Column(name = "is_default", nullable = false)
+    private boolean defaultCategory;
+
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     @JsonIgnore
@@ -50,6 +53,14 @@ public class Category {
 
     public void setColor(String color) {
         this.color = color;
+    }
+
+    public boolean isDefaultCategory() {
+        return defaultCategory;
+    }
+
+    public void setDefaultCategory(boolean defaultCategory) {
+        this.defaultCategory = defaultCategory;
     }
 
     public User getUser() {

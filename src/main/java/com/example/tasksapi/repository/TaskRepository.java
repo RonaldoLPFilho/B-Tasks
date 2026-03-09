@@ -17,6 +17,8 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
 
     List<Task> findByUserIdOrderBySortOrderAsc(UUID userId);
 
+    List<Task> findByUserIdAndCategoryIsNull(UUID userId);
+
     List<Task> findByTabIsNull();
 
     List<Task> findByTabIsNullAndSectionIsNull();
@@ -26,6 +28,8 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     List<Task> findByTab_IdAndSectionIsNullOrderBySortOrderAsc(UUID tabId);
 
     List<Task> findBySection_Tab_IdOrderBySortOrderAsc(UUID tabId);
+
+    List<Task> findByCategoryId(UUID categoryId);
 
     @Modifying
     @Query("UPDATE Task t SET t.sortOrder = t.sortOrder + 1 WHERE t.user.id = :userId")

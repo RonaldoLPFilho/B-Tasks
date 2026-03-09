@@ -1,65 +1,168 @@
 package com.example.tasksapi.service.task;
 
 import com.example.tasksapi.domain.task.Category;
+import com.example.tasksapi.domain.task.Task;
 import com.example.tasksapi.domain.User;
 import com.example.tasksapi.dto.CategoryDTO;
+import com.example.tasksapi.dto.DeleteCategoryRequestDTO;
 import com.example.tasksapi.exception.InvalidDataException;
 import com.example.tasksapi.exception.NotFoundException;
 import com.example.tasksapi.repository.CategoryRepository;
+import com.example.tasksapi.repository.TaskRepository;
 import com.example.tasksapi.service.user.UserService;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class CategoryService {
+    public static final String DEFAULT_CATEGORY_NAME = "Padrão";
+    public static final String DEFAULT_CATEGORY_COLOR = "#9333EA";
+
     private final CategoryRepository categoryRepository;
+    private final TaskRepository taskRepository;
     private final UserService userService;
 
-    public CategoryService(CategoryRepository categoryRepository, UserService userService) {
+    public CategoryService(CategoryRepository categoryRepository, TaskRepository taskRepository, UserService userService) {
         this.categoryRepository = categoryRepository;
+        this.taskRepository = taskRepository;
         this.userService = userService;
     }
 
     public List<Category> findAllByToken(String token) {
-        Optional<User> user = userService.extractEmailFromTokenAndReturnUser(token);
-
-        if(user.isEmpty()){
-            throw new NotFoundException("User not found");
-        }
-
-        return categoryRepository.findByUserId(user.get().getId());
-    }
-
-    public Category findById(UUID id) {
-        Optional<Category> category = categoryRepository.findById(id);
-        if(category.isEmpty()){
-            throw new NotFoundException("Category not found");
-        }
-        return category.get();
-    }
-
-    public void createCategory(CategoryDTO dto, String token) {
         User user = userService.extractEmailFromTokenAndReturnUser(token)
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
+        ensureDefaultCategory(user);
+        return categoryRepository.findByUserIdOrderByDefaultCategoryDescNameAsc(user.getId());
+    }
 
-        if(isValidCategory(dto, user.getId())){
-            Category category = new Category();
-            category.setUser(user);
-            category.setColor(dto.color());
-            category.setName(dto.name());
+    public Category findByIdAndValidateOwnership(UUID id, UUID userId) {
+        return categoryRepository.findByUserIdAndId(userId, id)
+                .orElseThrow(() -> new NotFoundException("Category not found"));
+    }
 
-            categoryRepository.save(category);
-        }else{
+    @Transactional
+    public Category createCategory(CategoryDTO dto, String token) {
+        User user = userService.extractEmailFromTokenAndReturnUser(token)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        validateCategory(dto, user.getId(), null);
+
+        Category category = new Category();
+        category.setUser(user);
+        category.setColor(dto.color().trim());
+        category.setName(dto.name().trim());
+        category.setDefaultCategory(false);
+
+        return categoryRepository.save(category);
+    }
+
+    @Transactional
+    public Category updateCategory(UUID categoryId, CategoryDTO dto, String token) {
+        User user = userService.extractEmailFromTokenAndReturnUser(token)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        Category category = findByIdAndValidateOwnership(categoryId, user.getId());
+
+        validateCategory(dto, user.getId(), categoryId);
+
+        category.setName(dto.name().trim());
+        category.setColor(dto.color().trim());
+        return categoryRepository.save(category);
+    }
+
+    @Transactional
+    public void deleteCategory(UUID categoryId, DeleteCategoryRequestDTO request, String token) {
+        User user = userService.extractEmailFromTokenAndReturnUser(token)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        Category categoryToDelete = findByIdAndValidateOwnership(categoryId, user.getId());
+        Category fallbackCategory = resolveFallbackCategory(user, categoryToDelete, request);
+
+        List<Task> tasks = taskRepository.findByCategoryId(categoryToDelete.getId());
+        for (Task task : tasks) {
+            task.setCategory(fallbackCategory);
+        }
+        taskRepository.saveAll(tasks);
+
+        categoryRepository.delete(categoryToDelete);
+    }
+
+    @Transactional
+    public Category ensureDefaultCategory(User user) {
+        return categoryRepository.findByUserIdAndDefaultCategoryTrue(user.getId())
+                .orElseGet(() -> createOrPromoteDefaultCategory(user));
+    }
+
+    @Transactional
+    public Category createDefaultCategory(User user) {
+        return ensureDefaultCategory(user);
+    }
+
+    private Category createOrPromoteDefaultCategory(User user) {
+        Category existingDefaultByName = categoryRepository
+                .findByUserIdAndNameIgnoreCase(user.getId(), DEFAULT_CATEGORY_NAME)
+                .orElse(null);
+
+        if (existingDefaultByName != null) {
+            existingDefaultByName.setDefaultCategory(true);
+            if (existingDefaultByName.getColor() == null || existingDefaultByName.getColor().isBlank()) {
+                existingDefaultByName.setColor(DEFAULT_CATEGORY_COLOR);
+            }
+            return categoryRepository.save(existingDefaultByName);
+        }
+
+        Category category = new Category();
+        category.setUser(user);
+        category.setName(DEFAULT_CATEGORY_NAME);
+        category.setColor(DEFAULT_CATEGORY_COLOR);
+        category.setDefaultCategory(true);
+        return categoryRepository.save(category);
+    }
+
+    private Category resolveFallbackCategory(User user, Category categoryToDelete, DeleteCategoryRequestDTO request) {
+        if (!categoryToDelete.isDefaultCategory()) {
+            Category fallbackCategory = ensureDefaultCategory(user);
+            if (fallbackCategory.getId().equals(categoryToDelete.getId())) {
+                throw new InvalidDataException("Default category cannot be removed without a replacement category");
+            }
+            return fallbackCategory;
+        }
+
+        UUID replacementCategoryId = request != null ? request.replacementCategoryId() : null;
+        if (replacementCategoryId == null) {
+            throw new InvalidDataException("Replacement category is required to remove the default category");
+        }
+
+        if (replacementCategoryId.equals(categoryToDelete.getId())) {
+            throw new InvalidDataException("Replacement category must be different from the category being removed");
+        }
+
+        Category replacementCategory = findByIdAndValidateOwnership(replacementCategoryId, user.getId());
+        replacementCategory.setDefaultCategory(true);
+        categoryRepository.save(replacementCategory);
+        return replacementCategory;
+    }
+
+    private void validateCategory(CategoryDTO dto, UUID userId, UUID currentCategoryId) {
+        if (dto == null) {
             throw new InvalidDataException("Invalid category");
         }
 
-    }
+        if (dto.name() == null || dto.name().isBlank()) {
+            throw new InvalidDataException("Category name is required");
+        }
 
-    private boolean isValidCategory(CategoryDTO dto, UUID userId) {
-        return !dto.name().isBlank()  && !categoryRepository.existsByNameAndUserId(dto.name(), userId);
+        if (dto.color() == null || dto.color().isBlank()) {
+            throw new InvalidDataException("Category color is required");
+        }
+
+        Category existingCategory = categoryRepository.findByUserIdAndNameIgnoreCase(userId, dto.name().trim())
+                .orElse(null);
+
+        if (existingCategory != null && !existingCategory.getId().equals(currentCategoryId)) {
+            throw new InvalidDataException("Category name already exists");
+        }
     }
 }

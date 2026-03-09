@@ -1,6 +1,7 @@
 package com.example.tasksapi.domain;
 
 import com.example.tasksapi.domain.pomodoro.PomodoroPreferences;
+import com.example.tasksapi.domain.pomodoro.PomodoroTimerState;
 import com.example.tasksapi.domain.task.Category;
 import com.example.tasksapi.domain.task.Task;
 import jakarta.persistence.*;
@@ -33,6 +34,9 @@ public class User extends Auditable {
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private PomodoroPreferences pomodoroPreferences;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private PomodoroTimerState pomodoroTimerState;
 
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private UserLanguagePreference userLanguagePreference;
@@ -98,6 +102,14 @@ public class User extends Auditable {
 
     public void setPomodoroPreferences(PomodoroPreferences pomodoroPreferences) {
         this.pomodoroPreferences = pomodoroPreferences;
+    }
+
+    public PomodoroTimerState getPomodoroTimerState() {
+        return pomodoroTimerState;
+    }
+
+    public void setPomodoroTimerState(PomodoroTimerState pomodoroTimerState) {
+        this.pomodoroTimerState = pomodoroTimerState;
     }
 
     public UserLanguagePreference getResumeLanguage() {

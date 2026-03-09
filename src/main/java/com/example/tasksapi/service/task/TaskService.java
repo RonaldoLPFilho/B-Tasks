@@ -36,13 +36,14 @@ public class TaskService {
     }
 
     public List<Task> findAllByToken(String token){
-        User user = userService.extractEmailFromTokenAndReturnUser(token)
-                .orElseThrow(() -> new NotFoundException("User not found"));
-
+        User user = extractUser(token);
         return taskRepository.findByUserIdOrderBySortOrderAsc(user.getId());
     }
 
-    public List<Task> findByTabId(UUID tabId) {
+    public List<Task> findByTabId(UUID tabId, String token) {
+        User user = extractUser(token);
+        tabService.findByIdAndValidateOwnership(tabId, user.getId());
+
         List<Task> bySection = taskRepository.findBySection_Tab_IdOrderBySortOrderAsc(tabId);
         if (!bySection.isEmpty()) {
             return bySection;
@@ -50,15 +51,19 @@ public class TaskService {
         return taskRepository.findByTab_IdOrderBySortOrderAsc(tabId);
     }
 
-    public Task findById(UUID id){
+    public Task findById(UUID id, String token){
+        User user = extractUser(token);
+        return findByIdAndValidateOwnership(id, user.getId());
+    }
+
+    public Task findById(UUID id) {
         return taskRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Task not found with id " + id));
     }
 
     @Transactional
     public Task save(TaskDTO dto, String token){
-        User user = userService.extractEmailFromTokenAndReturnUser(token)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+        User user = extractUser(token);
 
         if (dto.getTabId() == null) {
             throw new InvalidDataException("Tab is required for creating a task");
@@ -67,10 +72,7 @@ public class TaskService {
         tabService.findByIdAndValidateOwnership(dto.getTabId(), user.getId());
         Section geralSection = sectionService.findGeralSectionByTabId(dto.getTabId(), token);
 
-        Category category = null;
-        if (dto.getCategoryId() != null) {
-            category = categoryService.findById(dto.getCategoryId());
-        }
+        Category category = resolveTaskCategory(dto.getCategoryId(), user);
 
         Task task = new Task(dto.getTitle(), dto.getDescription(), user, geralSection, dto.getJiraId(), category);
 
@@ -85,13 +87,16 @@ public class TaskService {
     }
 
     @Transactional
-    public void deleteById(UUID id){
-        taskRepository.deleteById(id);
+    public void deleteById(UUID id, String token){
+        User user = extractUser(token);
+        Task task = findByIdAndValidateOwnership(id, user.getId());
+        taskRepository.delete(task);
     }
 
     @Transactional
-    public Task update(UUID taskId, TaskDTO dto){
-        Task task = findById(taskId);
+    public Task update(UUID taskId, TaskDTO dto, String token){
+        User user = extractUser(token);
+        Task task = findByIdAndValidateOwnership(taskId, user.getId());
 
         task.setTitle(dto.getTitle());
         task.setDescription(dto.getDescription());
@@ -107,12 +112,14 @@ public class TaskService {
 
 
         task.setJiraId(dto.getJiraId());
+        task.setCategory(resolveTaskCategory(dto.getCategoryId(), user));
         return taskRepository.save(task);
     }
 
     @Transactional
-    public void updateCompleted(UUID taskId, boolean completed){
-        Task task = findById(taskId);
+    public void updateCompleted(UUID taskId, boolean completed, String token){
+        User user = extractUser(token);
+        Task task = findByIdAndValidateOwnership(taskId, user.getId());
         task.setCompleted(completed);
 
         if(completed){
@@ -201,8 +208,9 @@ public class TaskService {
     }
 
     @Transactional
-    public void disableTask(UUID taskId){
-        Task task = findById(taskId);
+    public void disableTask(UUID taskId, String token){
+        User user = extractUser(token);
+        Task task = findByIdAndValidateOwnership(taskId, user.getId());
         task.setActive(false);
 
         taskRepository.save(task);
@@ -210,8 +218,9 @@ public class TaskService {
 
 
     @Transactional
-    public void activeTask(UUID taskId){
-        Task task = findById(taskId);
+    public void activeTask(UUID taskId, String token){
+        User user = extractUser(token);
+        Task task = findByIdAndValidateOwnership(taskId, user.getId());
         task.setActive(true);
 
         taskRepository.save(task);
@@ -220,5 +229,29 @@ public class TaskService {
     private boolean isValidTask(Task task){
         return task.getTitle() != null &&
                 !task.getTitle().isBlank();
+    }
+
+    private User extractUser(String token) {
+        return userService.extractEmailFromTokenAndReturnUser(token)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+    }
+
+    private Task findByIdAndValidateOwnership(UUID id, UUID userId) {
+        Task task = taskRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Task not found with id " + id));
+
+        if (!task.getUser().getId().equals(userId)) {
+            throw new NotFoundException("Task not found with id " + id);
+        }
+
+        return task;
+    }
+
+    private Category resolveTaskCategory(UUID categoryId, User user) {
+        if (categoryId == null) {
+            return categoryService.ensureDefaultCategory(user);
+        }
+
+        return categoryService.findByIdAndValidateOwnership(categoryId, user.getId());
     }
 }

@@ -136,7 +136,7 @@ Toda tab nova começa com a section "Geral". Novas tasks são criadas na section
 | id         | UUID    | Sim         | PK, gerado                    |
 | title      | String  | Sim         | -                             |
 | description| String  | Não         | -                             |
-| category_id| UUID    | Não         | FK para Category (opcional)  |
+| category_id| UUID    | Sim         | FK para Category             |
 | section_id | UUID    | Sim         | FK para Section               |
 | user_id    | UUID    | Sim         | FK para User                  |
 | completed  | boolean | Sim         | Default: false                |
@@ -156,6 +156,7 @@ Toda tab nova começa com a section "Geral". Novas tasks são criadas na section
 - Novas tasks são criadas na section "Geral" da tab informada
 - `active = false`: task desativada (soft delete); não filtra listagens atualmente
 - Ao criar: `tabId` obrigatório no request
+- Toda task deve permanecer vinculada a uma categoria; se `categoryId` não for informado, a task usa a categoria padrão do usuário
 
 **Relacionamentos:**
 - **N:1** com User (dono)
@@ -177,9 +178,15 @@ Toda tab nova começa com a section "Geral". Novas tasks são criadas na section
 | id      | UUID   | Sim         | PK, gerado        |
 | name    | String | Sim         | Único por usuário |
 | color   | String | Sim         | Formato hex (#RRGGBB ou #RGB) |
+| is_default | boolean | Sim     | Apenas uma categoria padrão por usuário |
 | user_id | UUID   | Sim         | FK para User      |
 
 **Validação:** `@HexColor` em `color`
+
+**Regras de negócio:**
+- Todo usuário deve possuir exatamente **uma categoria padrão**
+- Ao remover uma categoria com tasks vinculadas, as tasks são movidas para a categoria padrão
+- A categoria padrão só pode ser removida se o usuário escolher outra categoria existente para assumir como nova padrão
 
 **Relacionamentos:**
 - **N:1** com User (dono)
@@ -237,6 +244,28 @@ Toda tab nova começa com a section "Geral". Novas tasks são criadas na section
 | breakDuration  | int    | Não         | Duração do intervalo (min) |
 | alarmSound     | String | Não         | Nome do som do alarme |
 | user_id        | UUID   | Sim         | FK para User (OneToOne) |
+
+**Relacionamentos:**
+- **1:1** com User
+
+---
+
+## PomodoroTimerState
+
+**Tabela:** `pomodoro_timer_state`
+
+**Descrição:** Estado persistido do timer Pomodoro por usuário.
+
+| Campo            | Tipo           | Obrigatório | Restrições |
+|------------------|----------------|-------------|------------|
+| id               | UUID           | Sim         | PK, gerado |
+| mode             | PomodoroMode   | Sim         | Enum: SESSION, BREAK |
+| status           | PomodoroStatus | Sim         | Enum: IDLE, RUNNING, PAUSED, ALARM |
+| startedAt        | LocalDateTime  | Não         | Início do ciclo atual |
+| endsAt           | LocalDateTime  | Não         | Fim previsto do ciclo atual |
+| remainingSeconds | Integer        | Sim         | Tempo restante em segundos |
+| alarmAcknowledged| boolean        | Sim         | Controle do alarme atual |
+| user_id          | UUID           | Sim         | FK para User (OneToOne) |
 
 **Relacionamentos:**
 - **1:1** com User
@@ -306,6 +335,6 @@ Toda tab nova começa com a section "Geral". Novas tasks são criadas na section
 |----------|-------------------|
 | **Tab**  | Máx. 5 ativas por usuário; nome máx. 20 caracteres; senha obrigatória para remover tab com tasks |
 | **Section** | Máx. 5 por tab; "Geral" é default, imutável (não pode excluir/alterar); ao excluir section, tasks vão para "Geral" |
-| **Task** | Obrigatório tabId na criação (task vai para section "Geral"); sortOrder único por section; active para soft delete |
-| **Category** | Nome único por usuário; color em hex |
+| **Task** | Obrigatório tabId na criação (task vai para section "Geral"); sortOrder único por section; active para soft delete; task sempre fica vinculada a uma categoria |
+| **Category** | Nome único por usuário; color em hex; uma categoria padrão obrigatória por usuário; exclusão reatribui tasks para a categoria padrão |
 | **User** | username e email únicos |

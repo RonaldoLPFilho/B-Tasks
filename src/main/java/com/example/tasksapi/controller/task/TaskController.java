@@ -31,20 +31,26 @@ public class TaskController {
         String token = authHeader.substring(7);
 
         List<Task> data = tabId != null
-                ? taskService.findByTabId(tabId)
+                ? taskService.findByTabId(tabId, token)
                 : taskService.findAllByToken(token);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Tasks", data));
     }
 
     @GetMapping("/{taskId}")
-    public ResponseEntity<ApiResponseDTO<Task>> getTaskById(@PathVariable UUID taskId) {
-        Task task = taskService.findById(taskId);
+    public ResponseEntity<ApiResponseDTO<Task>> getTaskById(
+            @PathVariable UUID taskId,
+            @RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.substring(7);
+        Task task = taskService.findById(taskId, token);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task found", task));
     }
 
     @DeleteMapping("/{taskId}")
-    public ResponseEntity<ApiResponseDTO<Void>> deleteTaskById(@PathVariable UUID taskId) {
-        taskService.deleteById(taskId);
+    public ResponseEntity<ApiResponseDTO<Void>> deleteTaskById(
+            @PathVariable UUID taskId,
+            @RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.substring(7);
+        taskService.deleteById(taskId, token);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Success deleted task id " + taskId, null));
     }
 
@@ -60,14 +66,22 @@ public class TaskController {
     }
 
     @PutMapping("/{taskId}")
-    public ResponseEntity<ApiResponseDTO<Task>> updateTask(@PathVariable UUID taskId, @RequestBody TaskDTO dto) {
-        Task data = taskService.update(taskId, dto);
+    public ResponseEntity<ApiResponseDTO<Task>> updateTask(
+            @PathVariable UUID taskId,
+            @RequestBody TaskDTO dto,
+            @RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.substring(7);
+        Task data = taskService.update(taskId, dto, token);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task updated", data));
     }
 
     @PutMapping("/{taskId}/{completed}")
-    public ResponseEntity<ApiResponseDTO<UUID>> completeTask(@PathVariable UUID taskId, @PathVariable boolean completed) {
-        taskService.updateCompleted(taskId, completed);
+    public ResponseEntity<ApiResponseDTO<UUID>> completeTask(
+            @PathVariable UUID taskId,
+            @PathVariable boolean completed,
+            @RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.substring(7);
+        taskService.updateCompleted(taskId, completed, token);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task completed", taskId));
     }
 
@@ -79,14 +93,20 @@ public class TaskController {
     }
 
     @PatchMapping("/disable/{taskId}")
-    public ResponseEntity<ApiResponseDTO<Void>> disableTask(@PathVariable UUID taskId) {
-        taskService.disableTask(taskId);
+    public ResponseEntity<ApiResponseDTO<Void>> disableTask(
+            @PathVariable UUID taskId,
+            @RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.substring(7);
+        taskService.disableTask(taskId, token);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task disabled",  null));
     }
 
     @PatchMapping("/active/{taskId}")
-    public ResponseEntity<ApiResponseDTO<Void>> activateTask(@PathVariable UUID taskId) {
-        taskService.activeTask(taskId);
+    public ResponseEntity<ApiResponseDTO<Void>> activateTask(
+            @PathVariable UUID taskId,
+            @RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.substring(7);
+        taskService.activeTask(taskId, token);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task activated",  null));
     }
 }

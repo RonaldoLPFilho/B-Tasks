@@ -367,7 +367,7 @@ Content-Type: application/json
 |------------|-------------|------------------------------------|
 | title      | Sim         | Título da task                     |
 | tabId      | Sim         | ID da tab onde a task será criada  |
-| categoryId | Não         | ID da categoria (opcional)         |
+| categoryId | Não         | ID da categoria; se omitido, usa a categoria padrão do usuário |
 | description| Não         | Descrição                          |
 | completed  | Não         | Default: false                     |
 | jiraId     | Não         | Integração Jira                    |
@@ -491,6 +491,91 @@ Alternativa: `GET /api/tabs/{tabId}` – retorna tab com sections e tasks aninha
 | 401 | Invalid password |
 | 404 | Tab not found with id {id} |
 | 404 | Task not found with id {id} |
+
+---
+
+## Endpoints: Categories
+
+Base path: `/api/categories`
+
+### Listar categorias do usuário
+
+```
+GET /api/categories
+```
+
+Retorna as categorias do usuário com a categoria padrão destacada por `defaultCategory = true`.
+
+### Criar categoria
+
+```
+POST /api/categories
+Content-Type: application/json
+```
+
+**Request body:**
+```json
+{
+  "name": "Urgente",
+  "color": "#FF0000"
+}
+```
+
+### Atualizar categoria
+
+```
+PUT /api/categories/{categoryId}
+Content-Type: application/json
+```
+
+**Request body:** mesmo contrato da criação.
+
+### Remover categoria
+
+```
+DELETE /api/categories/{categoryId}
+Content-Type: application/json
+```
+
+- Ao remover uma categoria comum, as tasks vinculadas são movidas para a categoria padrão do usuário.
+- Ao remover a categoria padrão, é obrigatório informar outra categoria do mesmo usuário para assumir como nova padrão.
+
+**Request body para remover a categoria padrão:**
+```json
+{
+  "replacementCategoryId": "uuid-da-nova-categoria-padrao"
+}
+```
+
+---
+
+## Endpoints: Pomodoro
+
+Base path: `/api/pomodoro`
+
+### Preferências do Pomodoro
+
+```
+GET /api/pomodoro
+PUT /api/pomodoro
+GET /api/pomodoro/sounds
+```
+
+### Estado persistido do timer
+
+Base path: `/api/pomodoro/state`
+
+```
+GET /api/pomodoro/state
+POST /api/pomodoro/state/start
+POST /api/pomodoro/state/pause
+POST /api/pomodoro/state/resume
+POST /api/pomodoro/state/reset
+POST /api/pomodoro/state/acknowledge
+```
+
+- O backend persiste modo, status, tempo restante e timestamps do ciclo atual.
+- O frontend continua responsável pela contagem visual e por tocar o som do alarme, mas sincroniza o estado com a API.
 
 ---
 
