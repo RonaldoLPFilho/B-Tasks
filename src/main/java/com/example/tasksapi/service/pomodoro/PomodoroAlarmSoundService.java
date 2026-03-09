@@ -1,29 +1,38 @@
 package com.example.tasksapi.service.pomodoro;
 
+import com.example.tasksapi.config.AudioConfig;
 import com.example.tasksapi.domain.pomodoro.PomodoroSoundOption;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
-import java.util.Comparator;
+import java.util.stream.Stream;
 
 @Service
 public class PomodoroAlarmSoundService {
-    private static final String ALARMS_PATTERN = "classpath:/static/alarms/*";
+
+    private final AudioConfig audioConfig;
+
+    public PomodoroAlarmSoundService(AudioConfig audioConfig) {
+        this.audioConfig = audioConfig;
+    }
 
     public List<PomodoroSoundOption> listAvailableSounds() {
-        PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+        Path alarmsPath = audioConfig.getAlarmsPath();
 
-        try {
-            Resource[] resources = resolver.getResources(ALARMS_PATTERN);
+        if (!Files.isDirectory(alarmsPath)) {
+            return List.of();
+        }
 
-            return java.util.Arrays.stream(resources)
-                    .map(Resource::getFilename)
-                    .filter(Objects::nonNull)
+        try (Stream<Path> paths = Files.list(alarmsPath)) {
+            return paths
+                    .filter(Files::isRegularFile)
+                    .map(Path::getFileName)
+                    .map(Path::toString)
                     .filter(this::isSupportedAudioFile)
                     .sorted(Comparator.naturalOrder())
                     .map(fileName -> new PomodoroSoundOption(

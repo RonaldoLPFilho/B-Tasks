@@ -1,3 +1,6 @@
+# Áudios servidos de diretório externo (tasks-audios)
+src/main/resources/static/alarms/
+src/main/resources/lofi/
 
 #Sensível:
 src/main/resources/sensitive.conf
