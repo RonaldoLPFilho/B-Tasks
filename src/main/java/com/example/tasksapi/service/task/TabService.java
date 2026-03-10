@@ -10,6 +10,7 @@ import com.example.tasksapi.exception.NotFoundException;
 import com.example.tasksapi.exception.UnauthorizedException;
 import com.example.tasksapi.repository.SectionRepository;
 import com.example.tasksapi.repository.TabRepository;
+import com.example.tasksapi.service.user.AuthenticatedUserService;
 import com.example.tasksapi.service.user.UserService;
 import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,14 +30,29 @@ public class TabService {
     private final TabRepository tabRepository;
     private final SectionRepository sectionRepository;
     private final UserService userService;
+    private final AuthenticatedUserService authenticatedUserService;
     private final PasswordEncoder passwordEncoder;
 
     public TabService(TabRepository tabRepository, SectionRepository sectionRepository,
-                      UserService userService, PasswordEncoder passwordEncoder) {
+                      UserService userService, PasswordEncoder passwordEncoder,
+                      AuthenticatedUserService authenticatedUserService) {
         this.tabRepository = tabRepository;
         this.sectionRepository = sectionRepository;
         this.userService = userService;
         this.passwordEncoder = passwordEncoder;
+        this.authenticatedUserService = authenticatedUserService;
+    }
+
+    public List<Tab> findAllForCurrentUser() {
+        return tabRepository.findByUserIdAndArchivedFalseOrderBySortOrderAsc(authenticatedUserService.getCurrentUser().getId());
+    }
+
+    public List<Tab> findAllIncludingArchivedForCurrentUser() {
+        return tabRepository.findByUserIdOrderBySortOrderAsc(authenticatedUserService.getCurrentUser().getId());
+    }
+
+    public Tab findByIdForCurrentUser(UUID id) {
+        return findByIdAndValidateOwnership(id, authenticatedUserService.getCurrentUser().getId());
     }
 
     public List<Tab> findAllByToken(String token) {
@@ -66,9 +82,18 @@ public class TabService {
     }
 
     @Transactional
+    public Tab create(CreateTabDTO dto) {
+        return createForUser(dto, authenticatedUserService.getCurrentUser());
+    }
+
+    @Transactional
     public Tab create(CreateTabDTO dto, String token) {
         User user = userService.extractEmailFromTokenAndReturnUser(token)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+        return createForUser(dto, user);
+    }
+
+    private Tab createForUser(CreateTabDTO dto, User user) {
 
         if (dto.name() == null || dto.name().isBlank()) {
             throw new InvalidDataException("Tab name is required");
@@ -98,9 +123,18 @@ public class TabService {
     }
 
     @Transactional
+    public Tab update(UUID id, UpdateTabDTO dto) {
+        return updateForUser(id, dto, authenticatedUserService.getCurrentUser());
+    }
+
+    @Transactional
     public Tab update(UUID id, UpdateTabDTO dto, String token) {
         User user = userService.extractEmailFromTokenAndReturnUser(token)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+        return updateForUser(id, dto, user);
+    }
+
+    private Tab updateForUser(UUID id, UpdateTabDTO dto, User user) {
         Tab tab = findByIdAndValidateOwnership(id, user.getId());
 
         if (dto.name() != null && !dto.name().isBlank()) {
@@ -127,18 +161,36 @@ public class TabService {
     }
 
     @Transactional
+    public void archive(UUID id) {
+        archiveForUser(id, authenticatedUserService.getCurrentUser());
+    }
+
+    @Transactional
     public void archive(UUID id, String token) {
         User user = userService.extractEmailFromTokenAndReturnUser(token)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+        archiveForUser(id, user);
+    }
+
+    private void archiveForUser(UUID id, User user) {
         Tab tab = findByIdAndValidateOwnership(id, user.getId());
         tab.setArchived(true);
         tabRepository.save(tab);
     }
 
     @Transactional
+    public void unarchive(UUID id) {
+        unarchiveForUser(id, authenticatedUserService.getCurrentUser());
+    }
+
+    @Transactional
     public void unarchive(UUID id, String token) {
         User user = userService.extractEmailFromTokenAndReturnUser(token)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+        unarchiveForUser(id, user);
+    }
+
+    private void unarchiveForUser(UUID id, User user) {
         Tab tab = findByIdAndValidateOwnership(id, user.getId());
 
         long activeCount = tabRepository.countByUserIdAndArchivedFalse(user.getId());
@@ -151,9 +203,18 @@ public class TabService {
     }
 
     @Transactional
+    public void delete(UUID id, String password) {
+        deleteForUser(id, password, authenticatedUserService.getCurrentUser());
+    }
+
+    @Transactional
     public void delete(UUID id, String token, String password) {
         User user = userService.extractEmailFromTokenAndReturnUser(token)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+        deleteForUser(id, password, user);
+    }
+
+    private void deleteForUser(UUID id, String password, User user) {
         Tab tab = findByIdAndValidateOwnership(id, user.getId());
 
         boolean hasTasks = tab.hasTasks();

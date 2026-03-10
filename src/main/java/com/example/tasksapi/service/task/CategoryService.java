@@ -9,6 +9,7 @@ import com.example.tasksapi.exception.InvalidDataException;
 import com.example.tasksapi.exception.NotFoundException;
 import com.example.tasksapi.repository.CategoryRepository;
 import com.example.tasksapi.repository.TaskRepository;
+import com.example.tasksapi.service.user.AuthenticatedUserService;
 import com.example.tasksapi.service.user.UserService;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
@@ -24,11 +25,20 @@ public class CategoryService {
     private final CategoryRepository categoryRepository;
     private final TaskRepository taskRepository;
     private final UserService userService;
+    private final AuthenticatedUserService authenticatedUserService;
 
-    public CategoryService(CategoryRepository categoryRepository, TaskRepository taskRepository, UserService userService) {
+    public CategoryService(CategoryRepository categoryRepository, TaskRepository taskRepository, UserService userService,
+                           AuthenticatedUserService authenticatedUserService) {
         this.categoryRepository = categoryRepository;
         this.taskRepository = taskRepository;
         this.userService = userService;
+        this.authenticatedUserService = authenticatedUserService;
+    }
+
+    public List<Category> findAllForCurrentUser() {
+        User user = authenticatedUserService.getCurrentUser();
+        ensureDefaultCategory(user);
+        return categoryRepository.findByUserIdOrderByDefaultCategoryDescNameAsc(user.getId());
     }
 
     public List<Category> findAllByToken(String token) {
@@ -45,10 +55,18 @@ public class CategoryService {
     }
 
     @Transactional
+    public Category createCategory(CategoryDTO dto) {
+        return createCategoryForUser(dto, authenticatedUserService.getCurrentUser());
+    }
+
+    @Transactional
     public Category createCategory(CategoryDTO dto, String token) {
         User user = userService.extractEmailFromTokenAndReturnUser(token)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+        return createCategoryForUser(dto, user);
+    }
 
+    private Category createCategoryForUser(CategoryDTO dto, User user) {
         validateCategory(dto, user.getId(), null);
 
         Category category = new Category();
@@ -61,9 +79,18 @@ public class CategoryService {
     }
 
     @Transactional
+    public Category updateCategory(UUID categoryId, CategoryDTO dto) {
+        return updateCategoryForUser(categoryId, dto, authenticatedUserService.getCurrentUser());
+    }
+
+    @Transactional
     public Category updateCategory(UUID categoryId, CategoryDTO dto, String token) {
         User user = userService.extractEmailFromTokenAndReturnUser(token)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+        return updateCategoryForUser(categoryId, dto, user);
+    }
+
+    private Category updateCategoryForUser(UUID categoryId, CategoryDTO dto, User user) {
         Category category = findByIdAndValidateOwnership(categoryId, user.getId());
 
         validateCategory(dto, user.getId(), categoryId);
@@ -74,9 +101,18 @@ public class CategoryService {
     }
 
     @Transactional
+    public void deleteCategory(UUID categoryId, DeleteCategoryRequestDTO request) {
+        deleteCategoryForUser(categoryId, request, authenticatedUserService.getCurrentUser());
+    }
+
+    @Transactional
     public void deleteCategory(UUID categoryId, DeleteCategoryRequestDTO request, String token) {
         User user = userService.extractEmailFromTokenAndReturnUser(token)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+        deleteCategoryForUser(categoryId, request, user);
+    }
+
+    private void deleteCategoryForUser(UUID categoryId, DeleteCategoryRequestDTO request, User user) {
         Category categoryToDelete = findByIdAndValidateOwnership(categoryId, user.getId());
         Category fallbackCategory = resolveFallbackCategory(user, categoryToDelete, request);
 

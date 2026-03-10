@@ -2,10 +2,12 @@ package com.example.tasksapi.service.task;
 
 import com.example.tasksapi.domain.task.Comment;
 import com.example.tasksapi.domain.task.Task;
+import com.example.tasksapi.domain.User;
 import com.example.tasksapi.dto.CreateCommentRequestDTO;
 import com.example.tasksapi.exception.InvalidDataException;
+import com.example.tasksapi.exception.NotFoundException;
 import com.example.tasksapi.repository.CommentRepository;
-import com.example.tasksapi.utils.UserUtils;
+import com.example.tasksapi.service.user.AuthenticatedUserService;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -16,20 +18,23 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
     private final TaskService taskService;
+    private final AuthenticatedUserService authenticatedUserService;
 
-    public CommentService(CommentRepository commentRepository, TaskService taskService) {
+    public CommentService(CommentRepository commentRepository, TaskService taskService,
+                          AuthenticatedUserService authenticatedUserService) {
         this.commentRepository = commentRepository;
         this.taskService = taskService;
+        this.authenticatedUserService = authenticatedUserService;
     }
 
 
     public Comment createComment(CreateCommentRequestDTO dto) {
         if(isValid(dto)){
-
-            Task task = taskService.findById(dto.taskId());
+            User user = authenticatedUserService.getCurrentUser();
+            Task task = taskService.findByIdAndValidateOwnership(dto.taskId(), user.getId());
             Comment comment = new Comment(
                     dto.description(),
-                    UserUtils.getCurrentUsername(),
+                    user.getUsername(),
                     task
             );
 
@@ -40,26 +45,16 @@ public class CommentService {
     }
 
     public void deleteById(UUID id) {
-        commentRepository.deleteById(id);
+        User user = authenticatedUserService.getCurrentUser();
+        Comment comment = commentRepository.findByIdAndTaskUserId(id, user.getId())
+                .orElseThrow(() -> new NotFoundException("Comment not found with id " + id));
+        commentRepository.delete(comment);
     }
 
     private boolean isValid(CreateCommentRequestDTO createCommentRequestDTO) {
         if(createCommentRequestDTO.description().isBlank() || createCommentRequestDTO.taskId() == null)
             return false;
 
-
-        if(!taskService.existsById(createCommentRequestDTO.taskId()))
-            return false;
-
         return true;
     }
-
-//    private String getCurrentUsername() {
-//        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-//        if(authentication != null && authentication.isAuthenticated()){
-//            User user = (User) authentication.getPrincipal();
-//            return user.getUsername();
-//        }
-//        return null;
-//    }
 }

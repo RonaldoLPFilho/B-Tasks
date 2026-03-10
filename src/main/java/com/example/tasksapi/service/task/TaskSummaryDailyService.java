@@ -6,6 +6,7 @@ import com.theokanning.openai.completion.chat.ChatMessage;
 import com.theokanning.openai.completion.chat.ChatMessageRole;
 import com.theokanning.openai.service.OpenAiService;
 import com.theokanning.openai.OpenAiHttpException;
+import com.example.tasksapi.exception.InvalidDataException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -24,7 +25,15 @@ public class TaskSummaryDailyService {
         this.taskService = taskService;
     }
 
+    public String generateDailySummaryForCurrentUser(String language) {
+        return generateDailySummary(taskService.findAllForCurrentUser(), language);
+    }
+
     public String generateDailySummary(String token, String language) {
+        return generateDailySummary(taskService.findAllByToken(token), language);
+    }
+
+    private String generateDailySummary(List<Task> tasks, String language) {
         try {
             List<ChatMessage> messages = new ArrayList<>();
 
@@ -37,7 +46,6 @@ public class TaskSummaryDailyService {
 //                    "Você é um assistente que prepara resumos para reuniões diárias (daily meeting)." +
 //                            "Você deve gerar um resumo bem estruturado, traduzido para o idioma solicitado pelo usuário, com base nas tarefas listadas."));
 
-            List<Task> tasks = taskService.findAllByToken(token);
             LocalDate today = LocalDate.now();
             LocalDate yesterday = today.minusDays(1);
 
@@ -113,9 +121,9 @@ public class TaskSummaryDailyService {
 
         } catch (OpenAiHttpException e) {
             if (e.statusCode == 429) {
-                throw new RuntimeException("Limite de uso da API OpenAI excedido. Por favor, verifique sua cota e faturamento em https://platform.openai.com/account/usage");
+                throw new InvalidDataException("Limite de uso da API OpenAI excedido. Por favor, verifique sua cota e faturamento.");
             }
-            throw new RuntimeException("Erro ao gerar resumo: " + e.getMessage());
+            throw new InvalidDataException("Erro ao gerar resumo: " + e.getMessage());
         }
     }
 

@@ -1,9 +1,10 @@
 package com.example.tasksapi.controller.task;
 
-import com.example.tasksapi.domain.task.Tab;
 import com.example.tasksapi.dto.ApiResponseDTO;
 import com.example.tasksapi.dto.CreateTabDTO;
 import com.example.tasksapi.dto.DeleteTabRequestDTO;
+import com.example.tasksapi.dto.TabResponseDTO;
+import com.example.tasksapi.dto.TaskResponseMapper;
 import com.example.tasksapi.dto.UpdateTabDTO;
 import com.example.tasksapi.service.task.TabService;
 import org.springframework.http.HttpStatus;
@@ -19,69 +20,62 @@ import java.util.UUID;
 public class TabController {
 
     private final TabService tabService;
+    private final TaskResponseMapper taskResponseMapper;
 
-    public TabController(TabService tabService) {
+    public TabController(TabService tabService, TaskResponseMapper taskResponseMapper) {
         this.tabService = tabService;
+        this.taskResponseMapper = taskResponseMapper;
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponseDTO<List<Tab>>> getAllActive(@RequestHeader("Authorization") String authHeader) {
-        String token = authHeader.substring(7);
-        List<Tab> data = tabService.findAllByToken(token);
+    public ResponseEntity<ApiResponseDTO<List<TabResponseDTO>>> getAllActive() {
+        List<TabResponseDTO> data = taskResponseMapper.toTabResponses(tabService.findAllForCurrentUser());
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Tabs", data));
     }
 
     @GetMapping("/all")
-    public ResponseEntity<ApiResponseDTO<List<Tab>>> getAllIncludingArchived(@RequestHeader("Authorization") String authHeader) {
-        String token = authHeader.substring(7);
-        List<Tab> data = tabService.findAllIncludingArchived(token);
+    public ResponseEntity<ApiResponseDTO<List<TabResponseDTO>>> getAllIncludingArchived() {
+        List<TabResponseDTO> data = taskResponseMapper.toTabResponses(tabService.findAllIncludingArchivedForCurrentUser());
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "All tabs", data));
     }
 
     @GetMapping("/{tabId}")
-    public ResponseEntity<ApiResponseDTO<Tab>> getById(@PathVariable UUID tabId) {
-        Tab data = tabService.findById(tabId);
+    public ResponseEntity<ApiResponseDTO<TabResponseDTO>> getById(@PathVariable UUID tabId) {
+        TabResponseDTO data = taskResponseMapper.toTabResponse(tabService.findByIdForCurrentUser(tabId));
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Tab found", data));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponseDTO<Tab>> create(@RequestBody CreateTabDTO dto, @RequestHeader("Authorization") String authHeader) {
-        String token = authHeader.substring(7);
-        Tab data = tabService.create(dto, token);
+    public ResponseEntity<ApiResponseDTO<TabResponseDTO>> create(@RequestBody CreateTabDTO dto) {
+        TabResponseDTO data = taskResponseMapper.toTabResponse(tabService.create(dto));
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponseDTO.success(HttpStatus.CREATED, "Tab created", data));
     }
 
     @PutMapping("/{tabId}")
-    public ResponseEntity<ApiResponseDTO<Tab>> update(@PathVariable UUID tabId, @RequestBody UpdateTabDTO dto,
-                                                      @RequestHeader("Authorization") String authHeader) {
-        String token = authHeader.substring(7);
-        Tab data = tabService.update(tabId, dto, token);
+    public ResponseEntity<ApiResponseDTO<TabResponseDTO>> update(@PathVariable UUID tabId, @RequestBody UpdateTabDTO dto) {
+        TabResponseDTO data = taskResponseMapper.toTabResponse(tabService.update(tabId, dto));
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Tab updated", data));
     }
 
     @PatchMapping("/{tabId}/archive")
-    public ResponseEntity<ApiResponseDTO<Void>> archive(@PathVariable UUID tabId, @RequestHeader("Authorization") String authHeader) {
-        String token = authHeader.substring(7);
-        tabService.archive(tabId, token);
+    public ResponseEntity<ApiResponseDTO<Void>> archive(@PathVariable UUID tabId) {
+        tabService.archive(tabId);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Tab archived", null));
     }
 
     @PatchMapping("/{tabId}/unarchive")
-    public ResponseEntity<ApiResponseDTO<Void>> unarchive(@PathVariable UUID tabId, @RequestHeader("Authorization") String authHeader) {
-        String token = authHeader.substring(7);
-        tabService.unarchive(tabId, token);
+    public ResponseEntity<ApiResponseDTO<Void>> unarchive(@PathVariable UUID tabId) {
+        tabService.unarchive(tabId);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Tab unarchived", null));
     }
 
     @DeleteMapping("/{tabId}")
     public ResponseEntity<ApiResponseDTO<Void>> delete(@PathVariable UUID tabId,
-                                                       @RequestBody(required = false) DeleteTabRequestDTO body,
-                                                       @RequestHeader("Authorization") String authHeader) {
-        String token = authHeader.substring(7);
+                                                       @RequestBody(required = false) DeleteTabRequestDTO body) {
         String password = body != null ? body.password() : null;
-        tabService.delete(tabId, token, password);
+        tabService.delete(tabId, password);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Tab and its tasks removed", null));
     }
 }

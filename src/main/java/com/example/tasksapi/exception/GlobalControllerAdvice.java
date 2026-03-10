@@ -54,13 +54,13 @@ public class GlobalControllerAdvice {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponseDTO<?>> handleGenericException(Exception ex) {
-        logger.error(ex.getMessage());
+        logger.error("Unhandled exception", ex);
 
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiResponseDTO<>(ApiResponseStatus.ERROR,
                         "Erro interno não tratado",
-                        HttpStatus.BAD_REQUEST,
+                        HttpStatus.INTERNAL_SERVER_ERROR,
                         ErrorDetail.GENERIC_ERROR)
                 );
     }

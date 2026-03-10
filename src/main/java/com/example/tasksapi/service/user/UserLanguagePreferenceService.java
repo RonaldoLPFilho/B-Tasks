@@ -4,16 +4,17 @@ import com.example.tasksapi.domain.LanguageOption;
 import com.example.tasksapi.domain.User;
 import com.example.tasksapi.domain.UserLanguagePreference;
 import com.example.tasksapi.repository.UserLanguagePreferenceRepository;
-import com.example.tasksapi.utils.UserUtils;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 @Service
 public class UserLanguagePreferenceService {
     private final UserLanguagePreferenceRepository repository;
+    private final AuthenticatedUserService authenticatedUserService;
 
-    public UserLanguagePreferenceService(UserLanguagePreferenceRepository repository) {
+    public UserLanguagePreferenceService(UserLanguagePreferenceRepository repository,
+                                         AuthenticatedUserService authenticatedUserService) {
         this.repository = repository;
+        this.authenticatedUserService = authenticatedUserService;
     }
 
     public void createDefaultLanguagePreferences(User user) {
@@ -21,15 +22,16 @@ public class UserLanguagePreferenceService {
                 user,
                 LanguageOption.ES_ES
         );
+        repository.save(userLanguagePreference);
     }
 
     public UserLanguagePreference getUserLanguagePreference() {
-        return repository.getByUserId(UserUtils.getCurrentUser().getId());
+        return repository.getByUserId(authenticatedUserService.getCurrentUser().getId());
     }
 
 
     public void updateUserLanguagePreference(LanguageOption language) {
-        User user = UserUtils.getCurrentUser();
+        User user = authenticatedUserService.getCurrentUser();
         UserLanguagePreference preference = repository.getByUserId(user.getId());
         preference.setLanguage(language);
         repository.save(preference);

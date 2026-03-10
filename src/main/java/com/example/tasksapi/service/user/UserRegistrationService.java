@@ -4,6 +4,7 @@ import com.example.tasksapi.domain.User;
 import com.example.tasksapi.dto.UserDTO;
 import com.example.tasksapi.service.pomodoro.PomodoroService;
 import com.example.tasksapi.service.task.CategoryService;
+import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +29,7 @@ public class UserRegistrationService {
         this.categoryService = categoryService;
     }
 
+    @Transactional
     public boolean registerUser(UserDTO dto) {
         if(userService.userExists(dto.username(), dto.email())){
             return false;

@@ -1,8 +1,9 @@
 package com.example.tasksapi.controller.task;
 
-import com.example.tasksapi.domain.task.Subtask;
 import com.example.tasksapi.dto.ApiResponseDTO;
 import com.example.tasksapi.dto.CreateSubstaskRequestDTO;
+import com.example.tasksapi.dto.SubtaskResponseDTO;
+import com.example.tasksapi.dto.TaskResponseMapper;
 import com.example.tasksapi.service.task.SubtaskService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,14 +16,16 @@ import java.util.UUID;
 public class SubtaskController {
 
     private final SubtaskService subtaskService;
+    private final TaskResponseMapper taskResponseMapper;
 
-    public SubtaskController(SubtaskService subtaskService) {
+    public SubtaskController(SubtaskService subtaskService, TaskResponseMapper taskResponseMapper) {
         this.subtaskService = subtaskService;
+        this.taskResponseMapper = taskResponseMapper;
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponseDTO<Subtask>> create(@RequestBody CreateSubstaskRequestDTO subDTO) {
-        Subtask data = subtaskService.createSubtask(subDTO);
+    public ResponseEntity<ApiResponseDTO<SubtaskResponseDTO>> create(@RequestBody CreateSubstaskRequestDTO subDTO) {
+        SubtaskResponseDTO data = taskResponseMapper.toSubtaskResponse(subtaskService.createSubtask(subDTO));
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)

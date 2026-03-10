@@ -14,7 +14,7 @@ import com.example.tasksapi.exception.InvalidDataException;
 import com.example.tasksapi.exception.NotFoundException;
 import com.example.tasksapi.repository.PomodoroPreferencesRepository;
 import com.example.tasksapi.repository.PomodoroTimerStateRepository;
-import com.example.tasksapi.utils.UserUtils;
+import com.example.tasksapi.service.user.AuthenticatedUserService;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -26,14 +26,17 @@ public class PomodoroService {
     private final PomodoroPreferencesRepository pomodoroPreferencesRepository;
     private final PomodoroTimerStateRepository pomodoroTimerStateRepository;
     private final PomodoroAlarmSoundService pomodoroAlarmSoundService;
+    private final AuthenticatedUserService authenticatedUserService;
 
     public PomodoroService(
             PomodoroPreferencesRepository pomodoroPreferencesRepository,
             PomodoroTimerStateRepository pomodoroTimerStateRepository,
-            PomodoroAlarmSoundService pomodoroAlarmSoundService) {
+            PomodoroAlarmSoundService pomodoroAlarmSoundService,
+            AuthenticatedUserService authenticatedUserService) {
         this.pomodoroPreferencesRepository = pomodoroPreferencesRepository;
         this.pomodoroTimerStateRepository = pomodoroTimerStateRepository;
         this.pomodoroAlarmSoundService = pomodoroAlarmSoundService;
+        this.authenticatedUserService = authenticatedUserService;
     }
 
     @Transactional
@@ -54,13 +57,13 @@ public class PomodoroService {
 
     @Transactional
     public PomodoroPreferences getPomodoroPreferences() {
-        User user = UserUtils.getCurrentUser();
+        User user = authenticatedUserService.getCurrentUser();
         return getOrCreatePomodoroPreferences(user);
     }
 
     @Transactional
     public PomodoroPreferences updatePomodoroPreferences(CreatePomodoroPreferenceDTO dto) {
-        User user = UserUtils.getCurrentUser();
+        User user = authenticatedUserService.getCurrentUser();
         validatePreferences(dto);
 
         PomodoroPreferences preferences = getOrCreatePomodoroPreferences(user);
@@ -82,7 +85,7 @@ public class PomodoroService {
 
     @Transactional
     public PomodoroTimerStateDTO getPomodoroTimerState() {
-        User user = UserUtils.getCurrentUser();
+        User user = authenticatedUserService.getCurrentUser();
         PomodoroPreferences preferences = getOrCreatePomodoroPreferences(user);
         PomodoroTimerState state = refreshExpiredTimerState(getOrCreatePomodoroTimerState(user, preferences), preferences);
         return toStateDto(state, preferences);
@@ -90,7 +93,7 @@ public class PomodoroService {
 
     @Transactional
     public PomodoroTimerStateDTO startTimer(StartPomodoroTimerRequestDTO request) {
-        User user = UserUtils.getCurrentUser();
+        User user = authenticatedUserService.getCurrentUser();
         PomodoroPreferences preferences = getOrCreatePomodoroPreferences(user);
         PomodoroTimerState state = getOrCreatePomodoroTimerState(user, preferences);
 
@@ -109,7 +112,7 @@ public class PomodoroService {
 
     @Transactional
     public PomodoroTimerStateDTO pauseTimer() {
-        User user = UserUtils.getCurrentUser();
+        User user = authenticatedUserService.getCurrentUser();
         PomodoroPreferences preferences = getOrCreatePomodoroPreferences(user);
         PomodoroTimerState state = refreshExpiredTimerState(getOrCreatePomodoroTimerState(user, preferences), preferences);
 
@@ -127,7 +130,7 @@ public class PomodoroService {
 
     @Transactional
     public PomodoroTimerStateDTO resumeTimer() {
-        User user = UserUtils.getCurrentUser();
+        User user = authenticatedUserService.getCurrentUser();
         PomodoroPreferences preferences = getOrCreatePomodoroPreferences(user);
         PomodoroTimerState state = refreshExpiredTimerState(getOrCreatePomodoroTimerState(user, preferences), preferences);
 
@@ -145,7 +148,7 @@ public class PomodoroService {
 
     @Transactional
     public PomodoroTimerStateDTO resetTimer(ResetPomodoroTimerRequestDTO request) {
-        User user = UserUtils.getCurrentUser();
+        User user = authenticatedUserService.getCurrentUser();
         PomodoroPreferences preferences = getOrCreatePomodoroPreferences(user);
         PomodoroTimerState state = getOrCreatePomodoroTimerState(user, preferences);
 
@@ -166,7 +169,7 @@ public class PomodoroService {
 
     @Transactional
     public PomodoroTimerStateDTO acknowledgeAlarm(AcknowledgePomodoroAlarmRequestDTO request) {
-        User user = UserUtils.getCurrentUser();
+        User user = authenticatedUserService.getCurrentUser();
         PomodoroPreferences preferences = getOrCreatePomodoroPreferences(user);
         PomodoroTimerState state = refreshExpiredTimerState(getOrCreatePomodoroTimerState(user, preferences), preferences);
 

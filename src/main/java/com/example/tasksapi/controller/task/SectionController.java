@@ -1,9 +1,10 @@
 package com.example.tasksapi.controller.task;
 
-import com.example.tasksapi.domain.task.Section;
 import com.example.tasksapi.dto.ApiResponseDTO;
 import com.example.tasksapi.dto.CreateSectionDTO;
 import com.example.tasksapi.dto.ReorderSectionsRequest;
+import com.example.tasksapi.dto.SectionResponseDTO;
+import com.example.tasksapi.dto.TaskResponseMapper;
 import com.example.tasksapi.dto.UpdateSectionDTO;
 import com.example.tasksapi.service.task.SectionService;
 import org.springframework.http.HttpStatus;
@@ -19,55 +20,45 @@ import java.util.UUID;
 public class SectionController {
 
     private final SectionService sectionService;
+    private final TaskResponseMapper taskResponseMapper;
 
-    public SectionController(SectionService sectionService) {
+    public SectionController(SectionService sectionService, TaskResponseMapper taskResponseMapper) {
         this.sectionService = sectionService;
+        this.taskResponseMapper = taskResponseMapper;
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponseDTO<List<Section>>> list(@PathVariable UUID tabId,
-                                                              @RequestHeader("Authorization") String authHeader) {
-        String token = authHeader.substring(7);
-        List<Section> data = sectionService.findByTabId(tabId, token);
+    public ResponseEntity<ApiResponseDTO<List<SectionResponseDTO>>> list(@PathVariable UUID tabId) {
+        List<SectionResponseDTO> data = taskResponseMapper.toSectionResponses(sectionService.findByTabIdForCurrentUser(tabId));
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Sections", data));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponseDTO<Section>> create(@PathVariable UUID tabId,
-                                                           @RequestBody CreateSectionDTO dto,
-                                                           @RequestHeader("Authorization") String authHeader) {
-        String token = authHeader.substring(7);
-        Section data = sectionService.create(tabId, dto, token);
+    public ResponseEntity<ApiResponseDTO<SectionResponseDTO>> create(@PathVariable UUID tabId,
+                                                           @RequestBody CreateSectionDTO dto) {
+        SectionResponseDTO data = taskResponseMapper.toSectionResponse(sectionService.create(tabId, dto));
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponseDTO.success(HttpStatus.CREATED, "Section created", data));
     }
 
     @PutMapping("/{sectionId}")
-    public ResponseEntity<ApiResponseDTO<Section>> update(@PathVariable UUID tabId,
+    public ResponseEntity<ApiResponseDTO<SectionResponseDTO>> update(@PathVariable UUID tabId,
                                                           @PathVariable UUID sectionId,
-                                                          @RequestBody UpdateSectionDTO dto,
-                                                          @RequestHeader("Authorization") String authHeader) {
-        String token = authHeader.substring(7);
-        Section data = sectionService.update(tabId, sectionId, dto, token);
+                                                          @RequestBody UpdateSectionDTO dto) {
+        SectionResponseDTO data = taskResponseMapper.toSectionResponse(sectionService.update(tabId, sectionId, dto));
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Section updated", data));
     }
 
     @DeleteMapping("/{sectionId}")
-    public ResponseEntity<ApiResponseDTO<Void>> delete(@PathVariable UUID tabId,
-                                                       @PathVariable UUID sectionId,
-                                                       @RequestHeader("Authorization") String authHeader) {
-        String token = authHeader.substring(7);
-        sectionService.delete(tabId, sectionId, token);
+    public ResponseEntity<ApiResponseDTO<Void>> delete(@PathVariable UUID tabId, @PathVariable UUID sectionId) {
+        sectionService.delete(tabId, sectionId);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Section deleted", null));
     }
 
     @PatchMapping("/reorder")
-    public ResponseEntity<Void> reorder(@PathVariable UUID tabId,
-                                        @RequestBody ReorderSectionsRequest body,
-                                        @RequestHeader("Authorization") String authHeader) {
-        String token = authHeader.substring(7);
-        sectionService.reorder(tabId, body.orderedIds(), token);
+    public ResponseEntity<Void> reorder(@PathVariable UUID tabId, @RequestBody ReorderSectionsRequest body) {
+        sectionService.reorder(tabId, body.orderedIds());
         return ResponseEntity.noContent().build();
     }
 }

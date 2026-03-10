@@ -9,6 +9,7 @@ import com.example.tasksapi.dto.TaskDTO;
 import com.example.tasksapi.exception.InvalidDataException;
 import com.example.tasksapi.exception.NotFoundException;
 import com.example.tasksapi.repository.TaskRepository;
+import com.example.tasksapi.service.user.AuthenticatedUserService;
 import com.example.tasksapi.service.user.UserService;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
@@ -22,17 +23,32 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
     private final UserService userService;
+    private final AuthenticatedUserService authenticatedUserService;
     private final CategoryService categoryService;
     private final TabService tabService;
     private final SectionService sectionService;
 
     public TaskService(TaskRepository taskRepository, UserService userService, CategoryService categoryService,
-                       TabService tabService, SectionService sectionService) {
+                       TabService tabService, SectionService sectionService,
+                       AuthenticatedUserService authenticatedUserService) {
         this.taskRepository = taskRepository;
         this.userService = userService;
         this.categoryService = categoryService;
         this.tabService = tabService;
         this.sectionService = sectionService;
+        this.authenticatedUserService = authenticatedUserService;
+    }
+
+    public List<Task> findAllForCurrentUser() {
+        return taskRepository.findByUserIdOrderBySortOrderAsc(authenticatedUserService.getCurrentUser().getId());
+    }
+
+    public List<Task> findByTabIdForCurrentUser(UUID tabId) {
+        return findByTabId(tabId, authenticatedUserService.getCurrentUser().getId());
+    }
+
+    public Task findByIdForCurrentUser(UUID id) {
+        return findByIdAndValidateOwnership(id, authenticatedUserService.getCurrentUser().getId());
     }
 
     public List<Task> findAllByToken(String token){
@@ -41,9 +57,11 @@ public class TaskService {
     }
 
     public List<Task> findByTabId(UUID tabId, String token) {
-        User user = extractUser(token);
-        tabService.findByIdAndValidateOwnership(tabId, user.getId());
+        return findByTabId(tabId, extractUser(token).getId());
+    }
 
+    public List<Task> findByTabId(UUID tabId, UUID userId) {
+        tabService.findByIdAndValidateOwnership(tabId, userId);
         List<Task> bySection = taskRepository.findBySection_Tab_IdOrderBySortOrderAsc(tabId);
         if (!bySection.isEmpty()) {
             return bySection;
@@ -52,8 +70,7 @@ public class TaskService {
     }
 
     public Task findById(UUID id, String token){
-        User user = extractUser(token);
-        return findByIdAndValidateOwnership(id, user.getId());
+        return findByIdAndValidateOwnership(id, extractUser(token).getId());
     }
 
     public Task findById(UUID id) {
@@ -62,15 +79,15 @@ public class TaskService {
     }
 
     @Transactional
-    public Task save(TaskDTO dto, String token){
-        User user = extractUser(token);
+    public Task save(TaskDTO dto) {
+        User user = authenticatedUserService.getCurrentUser();
 
         if (dto.getTabId() == null) {
             throw new InvalidDataException("Tab is required for creating a task");
         }
 
         tabService.findByIdAndValidateOwnership(dto.getTabId(), user.getId());
-        Section geralSection = sectionService.findGeralSectionByTabId(dto.getTabId(), token);
+        Section geralSection = sectionService.findGeralSectionByTabId(dto.getTabId(), user.getId());
 
         Category category = resolveTaskCategory(dto.getCategoryId(), user);
 
@@ -87,17 +104,38 @@ public class TaskService {
     }
 
     @Transactional
-    public void deleteById(UUID id, String token){
+    public Task save(TaskDTO dto, String token){
         User user = extractUser(token);
-        Task task = findByIdAndValidateOwnership(id, user.getId());
+        return saveForUser(dto, user);
+    }
+
+    @Transactional
+    public void deleteById(UUID id){
+        Task task = findByIdAndValidateOwnership(id, authenticatedUserService.getCurrentUser().getId());
         taskRepository.delete(task);
+    }
+
+    @Transactional
+    public void deleteById(UUID id, String token){
+        Task task = findByIdAndValidateOwnership(id, extractUser(token).getId());
+        taskRepository.delete(task);
+    }
+
+    @Transactional
+    public Task update(UUID taskId, TaskDTO dto){
+        User user = authenticatedUserService.getCurrentUser();
+        Task task = findByIdAndValidateOwnership(taskId, user.getId());
+        return applyTaskUpdate(task, dto, user);
     }
 
     @Transactional
     public Task update(UUID taskId, TaskDTO dto, String token){
         User user = extractUser(token);
         Task task = findByIdAndValidateOwnership(taskId, user.getId());
+        return applyTaskUpdate(task, dto, user);
+    }
 
+    private Task applyTaskUpdate(Task task, TaskDTO dto, User user) {
         task.setTitle(dto.getTitle());
         task.setDescription(dto.getDescription());
 
@@ -117,19 +155,15 @@ public class TaskService {
     }
 
     @Transactional
+    public void updateCompleted(UUID taskId, boolean completed){
+        Task task = findByIdAndValidateOwnership(taskId, authenticatedUserService.getCurrentUser().getId());
+        applyCompletion(task, completed);
+    }
+
+    @Transactional
     public void updateCompleted(UUID taskId, boolean completed, String token){
-        User user = extractUser(token);
-        Task task = findByIdAndValidateOwnership(taskId, user.getId());
-        task.setCompleted(completed);
-
-        if(completed){
-            task.setFinishDate(LocalDate.now());
-        }
-        else {
-            task.setFinishDate(null);
-        }
-
-        taskRepository.save(task);
+        Task task = findByIdAndValidateOwnership(taskId, extractUser(token).getId());
+        applyCompletion(task, completed);
     }
 
     public boolean existsById(UUID id){
@@ -137,10 +171,19 @@ public class TaskService {
     }
 
     @Transactional
+    public void reorder(SectionTaskReorderRequest request) {
+        User user = authenticatedUserService.getCurrentUser();
+        reorderForUser(user, request);
+    }
+
+    @Transactional
     public void reorder(String token, SectionTaskReorderRequest request) {
         User user = userService.extractEmailFromTokenAndReturnUser(token)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+        reorderForUser(user, request);
+    }
 
+    private void reorderForUser(User user, SectionTaskReorderRequest request) {
         if (request.tabId() == null) {
             throw new InvalidDataException("Tab is required for reordering tasks");
         }
@@ -152,7 +195,7 @@ public class TaskService {
         }
 
         Set<UUID> allTabTaskIds = new HashSet<>();
-        for (Section s : sectionService.findByTabId(request.tabId(), token)) {
+        for (Section s : sectionService.findByTabId(request.tabId(), user.getId())) {
             allTabTaskIds.addAll(taskRepository.listIdsBySectionId(s.getId()));
         }
         allTabTaskIds.addAll(taskRepository.listIdsByTabId(request.tabId()));
@@ -208,9 +251,16 @@ public class TaskService {
     }
 
     @Transactional
+    public void disableTask(UUID taskId){
+        Task task = findByIdAndValidateOwnership(taskId, authenticatedUserService.getCurrentUser().getId());
+        task.setActive(false);
+
+        taskRepository.save(task);
+    }
+
+    @Transactional
     public void disableTask(UUID taskId, String token){
-        User user = extractUser(token);
-        Task task = findByIdAndValidateOwnership(taskId, user.getId());
+        Task task = findByIdAndValidateOwnership(taskId, extractUser(token).getId());
         task.setActive(false);
 
         taskRepository.save(task);
@@ -218,10 +268,52 @@ public class TaskService {
 
 
     @Transactional
-    public void activeTask(UUID taskId, String token){
-        User user = extractUser(token);
-        Task task = findByIdAndValidateOwnership(taskId, user.getId());
+    public void activeTask(UUID taskId){
+        Task task = findByIdAndValidateOwnership(taskId, authenticatedUserService.getCurrentUser().getId());
         task.setActive(true);
+
+        taskRepository.save(task);
+    }
+
+    @Transactional
+    public void activeTask(UUID taskId, String token){
+        Task task = findByIdAndValidateOwnership(taskId, extractUser(token).getId());
+        task.setActive(true);
+
+        taskRepository.save(task);
+    }
+
+    private Task saveForUser(TaskDTO dto, User user) {
+        if (dto.getTabId() == null) {
+            throw new InvalidDataException("Tab is required for creating a task");
+        }
+
+        tabService.findByIdAndValidateOwnership(dto.getTabId(), user.getId());
+        Section geralSection = sectionService.findGeralSectionByTabId(dto.getTabId(), user.getId());
+
+        Category category = resolveTaskCategory(dto.getCategoryId(), user);
+
+        Task task = new Task(dto.getTitle(), dto.getDescription(), user, geralSection, dto.getJiraId(), category);
+
+        if(!isValidTask(task)){
+            throw new InvalidDataException("Invalid task");
+        }
+
+        taskRepository.bumpAllOrdersBySectionId(geralSection.getId());
+        task.setSortOrder(0);
+
+        return taskRepository.save(task);
+    }
+
+    private void applyCompletion(Task task, boolean completed) {
+        task.setCompleted(completed);
+
+        if(completed){
+            task.setFinishDate(LocalDate.now());
+        }
+        else {
+            task.setFinishDate(null);
+        }
 
         taskRepository.save(task);
     }
@@ -236,7 +328,7 @@ public class TaskService {
                 .orElseThrow(() -> new NotFoundException("User not found"));
     }
 
-    private Task findByIdAndValidateOwnership(UUID id, UUID userId) {
+    public Task findByIdAndValidateOwnership(UUID id, UUID userId) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Task not found with id " + id));
 

@@ -10,6 +10,7 @@ import com.example.tasksapi.exception.InvalidDataException;
 import com.example.tasksapi.exception.NotFoundException;
 import com.example.tasksapi.repository.SectionRepository;
 import com.example.tasksapi.repository.TaskRepository;
+import com.example.tasksapi.service.user.AuthenticatedUserService;
 import com.example.tasksapi.service.user.UserService;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
@@ -29,19 +30,29 @@ public class SectionService {
     private final TaskRepository taskRepository;
     private final TabService tabService;
     private final UserService userService;
+    private final AuthenticatedUserService authenticatedUserService;
 
     public SectionService(SectionRepository sectionRepository, TaskRepository taskRepository,
-                          TabService tabService, UserService userService) {
+                          TabService tabService, UserService userService,
+                          AuthenticatedUserService authenticatedUserService) {
         this.sectionRepository = sectionRepository;
         this.taskRepository = taskRepository;
         this.tabService = tabService;
         this.userService = userService;
+        this.authenticatedUserService = authenticatedUserService;
+    }
+
+    public List<Section> findByTabIdForCurrentUser(UUID tabId) {
+        return findByTabId(tabId, authenticatedUserService.getCurrentUser().getId());
     }
 
     public List<Section> findByTabId(UUID tabId, String token) {
-        User user = userService.extractEmailFromTokenAndReturnUser(token)
-                .orElseThrow(() -> new NotFoundException("User not found"));
-        tabService.findByIdAndValidateOwnership(tabId, user.getId());
+        return findByTabId(tabId, userService.extractEmailFromTokenAndReturnUser(token)
+                .orElseThrow(() -> new NotFoundException("User not found")).getId());
+    }
+
+    public List<Section> findByTabId(UUID tabId, UUID userId) {
+        tabService.findByIdAndValidateOwnership(tabId, userId);
         return sectionRepository.findByTabIdOrderBySortOrderAsc(tabId);
     }
 
@@ -53,7 +64,11 @@ public class SectionService {
     public Section findGeralSectionByTabId(UUID tabId, String token) {
         User user = userService.extractEmailFromTokenAndReturnUser(token)
                 .orElseThrow(() -> new NotFoundException("User not found"));
-        tabService.findByIdAndValidateOwnership(tabId, user.getId());
+        return findGeralSectionByTabId(tabId, user.getId());
+    }
+
+    public Section findGeralSectionByTabId(UUID tabId, UUID userId) {
+        tabService.findByIdAndValidateOwnership(tabId, userId);
         return sectionRepository.findByTabIdAndNameIgnoreCase(tabId, DEFAULT_SECTION_NAME)
                 .orElseThrow(() -> new InvalidDataException("Default section 'Geral' not found for tab"));
     }
@@ -68,9 +83,19 @@ public class SectionService {
     }
 
     @Transactional
+    public Section create(UUID tabId, CreateSectionDTO dto) {
+        User user = authenticatedUserService.getCurrentUser();
+        return createForUser(tabId, dto, user);
+    }
+
+    @Transactional
     public Section create(UUID tabId, CreateSectionDTO dto, String token) {
         User user = userService.extractEmailFromTokenAndReturnUser(token)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+        return createForUser(tabId, dto, user);
+    }
+
+    private Section createForUser(UUID tabId, CreateSectionDTO dto, User user) {
         Tab tab = tabService.findByIdAndValidateOwnership(tabId, user.getId());
 
         if (dto.name() == null || dto.name().isBlank()) {
@@ -90,9 +115,19 @@ public class SectionService {
     }
 
     @Transactional
+    public Section update(UUID tabId, UUID sectionId, UpdateSectionDTO dto) {
+        User user = authenticatedUserService.getCurrentUser();
+        return updateForUser(tabId, sectionId, dto, user);
+    }
+
+    @Transactional
     public Section update(UUID tabId, UUID sectionId, UpdateSectionDTO dto, String token) {
         User user = userService.extractEmailFromTokenAndReturnUser(token)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+        return updateForUser(tabId, sectionId, dto, user);
+    }
+
+    private Section updateForUser(UUID tabId, UUID sectionId, UpdateSectionDTO dto, User user) {
         Section section = findByIdAndValidateTab(sectionId, tabId, user.getId());
 
         if (DEFAULT_SECTION_NAME.equalsIgnoreCase(section.getName())) {
@@ -107,9 +142,19 @@ public class SectionService {
     }
 
     @Transactional
+    public void delete(UUID tabId, UUID sectionId) {
+        User user = authenticatedUserService.getCurrentUser();
+        deleteForUser(tabId, sectionId, user);
+    }
+
+    @Transactional
     public void delete(UUID tabId, UUID sectionId, String token) {
         User user = userService.extractEmailFromTokenAndReturnUser(token)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+        deleteForUser(tabId, sectionId, user);
+    }
+
+    private void deleteForUser(UUID tabId, UUID sectionId, User user) {
         Section section = findByIdAndValidateTab(sectionId, tabId, user.getId());
 
         Section geralSection = sectionRepository.findByTabIdAndNameIgnoreCase(tabId, DEFAULT_SECTION_NAME)
@@ -133,9 +178,19 @@ public class SectionService {
     }
 
     @Transactional
+    public void reorder(UUID tabId, List<UUID> orderedIds) {
+        User user = authenticatedUserService.getCurrentUser();
+        reorderForUser(tabId, orderedIds, user);
+    }
+
+    @Transactional
     public void reorder(UUID tabId, List<UUID> orderedIds, String token) {
         User user = userService.extractEmailFromTokenAndReturnUser(token)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+        reorderForUser(tabId, orderedIds, user);
+    }
+
+    private void reorderForUser(UUID tabId, List<UUID> orderedIds, User user) {
         tabService.findByIdAndValidateOwnership(tabId, user.getId());
 
         List<Section> sections = sectionRepository.findByTabIdOrderBySortOrderAsc(tabId);

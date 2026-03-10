@@ -39,14 +39,7 @@ public class AuthController {
 
     @PostMapping
     public ResponseEntity<ApiResponseDTO<LoginResponseDTO>> login(@RequestBody LoginDTO dto) {
-        try{
-            LoginResponseDTO responseDTO = authService.login(dto);
-
-            return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Login successful", responseDTO));
-        }catch (RuntimeException e){
-            return ResponseEntity
-                    .status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponseDTO.error(HttpStatus.UNAUTHORIZED, e.getMessage()));
-        }
+        LoginResponseDTO responseDTO = authService.login(dto);
+        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Login successful", responseDTO));
     }
 }

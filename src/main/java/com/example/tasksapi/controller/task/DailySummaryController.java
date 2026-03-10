@@ -18,9 +18,8 @@ public class DailySummaryController {
     }
 
     @GetMapping("/summary")
-    public ResponseEntity<ApiResponseDTO<String>> getDailySummary(@RequestHeader("Authorization") String authHeader, @RequestParam String language) {
-        String token = authHeader.substring(7);
-        String summary = taskSummaryDailyService.generateDailySummary(token, language);
+    public ResponseEntity<ApiResponseDTO<String>> getDailySummary(@RequestParam String language) {
+        String summary = taskSummaryDailyService.generateDailySummaryForCurrentUser(language);
 
         return ResponseEntity.ok(
             ApiResponseDTO.success(HttpStatus.OK, "Daily summary generated successfully", summary)

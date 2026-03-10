@@ -3,7 +3,6 @@ package com.example.tasksapi.service.user;
 import com.example.tasksapi.auth.JwtService;
 import com.example.tasksapi.domain.User;
 import com.example.tasksapi.repository.UserRepository;
-import com.example.tasksapi.utils.UserUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -12,13 +11,13 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
-
     private final JwtService jwtService;
+    private final AuthenticatedUserService authenticatedUserService;
 
-
-    public UserService(UserRepository userRepository, JwtService jwtService) {
+    public UserService(UserRepository userRepository, JwtService jwtService, AuthenticatedUserService authenticatedUserService) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
+        this.authenticatedUserService = authenticatedUserService;
     }
 
     public User registerUser(User user) {
@@ -28,7 +27,7 @@ public class UserService {
     public boolean userExists(String username, String email) {
         boolean usernameExists = userRepository.existsByUsername(username);
         boolean emailExists = userRepository.existsByEmail(email);
-        return usernameExists && emailExists;
+        return usernameExists || emailExists;
     }
 
     public boolean userExists(String username) {
@@ -45,7 +44,7 @@ public class UserService {
     }
 
     public String extractEmailFromContext(){
-        User user = UserUtils.getCurrentUser();
+        User user = authenticatedUserService.getCurrentUser();
         return user.getEmail();
     }
 }
