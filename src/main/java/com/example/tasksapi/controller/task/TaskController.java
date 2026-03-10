@@ -5,6 +5,8 @@ import com.example.tasksapi.dto.SectionTaskReorderRequest;
 import com.example.tasksapi.dto.TaskDTO;
 import com.example.tasksapi.dto.TaskResponseDTO;
 import com.example.tasksapi.dto.TaskResponseMapper;
+import com.example.tasksapi.dto.TaskSearchResultDTO;
+import com.example.tasksapi.service.task.TaskSearchService;
 import com.example.tasksapi.service.task.TaskService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -20,10 +22,13 @@ public class TaskController {
 
     private final TaskService taskService;
     private final TaskResponseMapper taskResponseMapper;
+    private final TaskSearchService taskSearchService;
 
-    public TaskController(TaskService taskService, TaskResponseMapper taskResponseMapper) {
+    public TaskController(TaskService taskService, TaskResponseMapper taskResponseMapper,
+                          TaskSearchService taskSearchService) {
         this.taskService = taskService;
         this.taskResponseMapper = taskResponseMapper;
+        this.taskSearchService = taskSearchService;
     }
 
     @GetMapping()
@@ -32,6 +37,15 @@ public class TaskController {
                 ? taskResponseMapper.toTaskResponses(taskService.findByTabIdForCurrentUser(tabId))
                 : taskResponseMapper.toTaskResponses(taskService.findAllForCurrentUser());
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Tasks", data));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponseDTO<List<TaskSearchResultDTO>>> searchTasks(
+            @RequestParam String q,
+            @RequestParam(required = false) UUID tabId,
+            @RequestParam(required = false) Integer limit) {
+        List<TaskSearchResultDTO> data = taskSearchService.search(q, tabId, limit);
+        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Search results", data));
     }
 
     @GetMapping("/{taskId}")
