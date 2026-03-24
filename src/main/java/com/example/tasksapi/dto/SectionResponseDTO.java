@@ -7,6 +7,7 @@ import java.util.UUID;
 public record SectionResponseDTO(
         UUID id,
         String name,
+        boolean archived,
         Integer sortOrder,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,

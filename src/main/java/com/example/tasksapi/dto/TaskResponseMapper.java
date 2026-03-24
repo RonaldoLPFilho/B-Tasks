@@ -26,6 +26,7 @@ public class TaskResponseMapper {
                 task.getSectionId(),
                 task.getSortOrder(),
                 task.isActive(),
+                task.isArchived(),
                 task.getCreatedAt(),
                 task.getUpdatedAt(),
                 toCategoryResponse(task.getCategory()),
@@ -35,17 +36,31 @@ public class TaskResponseMapper {
     }
 
     public SectionResponseDTO toSectionResponse(Section section) {
+        return toSectionResponse(section, false);
+    }
+
+    public SectionResponseDTO toSectionResponse(Section section, boolean includeArchivedTasks) {
         return new SectionResponseDTO(
                 section.getId(),
                 section.getName(),
+                section.isArchived(),
                 section.getSortOrder(),
                 section.getCreatedAt(),
                 section.getUpdatedAt(),
-                section.getTasks() == null ? Collections.emptyList() : section.getTasks().stream().map(this::toTaskResponse).toList()
+                section.getTasks() == null
+                        ? Collections.emptyList()
+                        : section.getTasks().stream()
+                        .filter(task -> includeArchivedTasks || !task.isArchived())
+                        .map(this::toTaskResponse)
+                        .toList()
         );
     }
 
     public TabResponseDTO toTabResponse(Tab tab) {
+        return toTabResponse(tab, false);
+    }
+
+    public TabResponseDTO toTabResponse(Tab tab, boolean includeArchivedContent) {
         return new TabResponseDTO(
                 tab.getId(),
                 tab.getName(),
@@ -53,7 +68,12 @@ public class TaskResponseMapper {
                 tab.getSortOrder(),
                 tab.getCreatedAt(),
                 tab.getUpdatedAt(),
-                tab.getSections() == null ? Collections.emptyList() : tab.getSections().stream().map(this::toSectionResponse).toList()
+                tab.getSections() == null
+                        ? Collections.emptyList()
+                        : tab.getSections().stream()
+                        .filter(section -> includeArchivedContent || !section.isArchived())
+                        .map(section -> toSectionResponse(section, includeArchivedContent))
+                        .toList()
         );
     }
 
@@ -92,11 +112,19 @@ public class TaskResponseMapper {
     }
 
     public List<SectionResponseDTO> toSectionResponses(List<Section> sections) {
-        return sections.stream().map(this::toSectionResponse).toList();
+        return toSectionResponses(sections, false);
+    }
+
+    public List<SectionResponseDTO> toSectionResponses(List<Section> sections, boolean includeArchivedTasks) {
+        return sections.stream().map(section -> toSectionResponse(section, includeArchivedTasks)).toList();
     }
 
     public List<TabResponseDTO> toTabResponses(List<Tab> tabs) {
-        return tabs.stream().map(this::toTabResponse).toList();
+        return toTabResponses(tabs, false);
+    }
+
+    public List<TabResponseDTO> toTabResponses(List<Tab> tabs, boolean includeArchivedContent) {
+        return tabs.stream().map(tab -> toTabResponse(tab, includeArchivedContent)).toList();
     }
 
     public List<CategoryResponseDTO> toCategoryResponses(List<Category> categories) {

@@ -147,17 +147,13 @@ public class TabService {
 
         if (dto.archived() != null) {
             if (dto.archived()) {
-                tab.setArchived(true);
+                archiveForUser(id, user);
             } else {
-                long activeCount = tabRepository.countByUserIdAndArchivedFalse(user.getId());
-                if (activeCount >= MAX_ACTIVE_TABS) {
-                    throw new InvalidDataException("Maximum of " + MAX_ACTIVE_TABS + " active tabs allowed. Archive another tab first.");
-                }
-                tab.setArchived(false);
+                unarchiveForUser(id, user);
             }
         }
 
-        return tabRepository.save(tab);
+        return findByIdAndValidateOwnership(id, user.getId());
     }
 
     @Transactional
@@ -174,6 +170,9 @@ public class TabService {
 
     private void archiveForUser(UUID id, User user) {
         Tab tab = findByIdAndValidateOwnership(id, user.getId());
+        if (tab.isArchived()) {
+            return;
+        }
         tab.setArchived(true);
         tabRepository.save(tab);
     }
@@ -192,6 +191,10 @@ public class TabService {
 
     private void unarchiveForUser(UUID id, User user) {
         Tab tab = findByIdAndValidateOwnership(id, user.getId());
+
+        if (!tab.isArchived()) {
+            return;
+        }
 
         long activeCount = tabRepository.countByUserIdAndArchivedFalse(user.getId());
         if (activeCount >= MAX_ACTIVE_TABS) {

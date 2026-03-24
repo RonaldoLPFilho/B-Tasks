@@ -16,15 +16,17 @@ Este documento descreve as alterações na API para suportar **Tabs** (abas) que
 
 - **Tab** contém **Sections** (ex: "Geral", "Segunda-feira", "Revisar").
 - **Section** contém **Tasks**.
-- Máximo **5 sections por tab** (incluindo "Geral").
+- Máximo **5 sections ativas por tab** (incluindo "Geral").
 - Toda tab nova começa com a section "Geral".
 - Novas tasks são criadas na section "Geral".
+- Sections também podem ser arquivadas.
 
 ### Alterações em Tasks
 
 - **Criação**: `tabId` é **obrigatório** no body (task é criada na section "Geral" da tab).
-- **Listagem**: Parâmetro opcional `?tabId=uuid` para filtrar por tab. Cada task inclui `sectionId` e `tabId`.
+- **Listagem**: Parâmetro opcional `?tabId=uuid` para filtrar por tab. Cada task inclui `sectionId`, `tabId`, `active` e `archived`.
 - **Reorder**: Novo contrato com `sectionUpdates` — permite reordenar e mover tasks entre sections.
+- **Histórico**: tasks arquivadas saem da UI principal e continuam disponíveis pela busca.
 
 ---
 
@@ -77,6 +79,11 @@ GET /api/tabs/all
 GET /api/tabs/{tabId}
 ```
 
+Parâmetro opcional:
+
+- `includeArchived=false` por padrão
+- quando `true`, inclui sections e tasks arquivadas na resposta
+
 **Response 200:**
 ```json
 {
@@ -93,6 +100,7 @@ GET /api/tabs/{tabId}
       {
         "id": "section-uuid",
         "name": "Geral",
+        "archived": false,
         "sortOrder": 0,
         "tasks": [
           {
@@ -101,6 +109,8 @@ GET /api/tabs/{tabId}
             "tabId": "tab-uuid",
             "sectionId": "section-uuid",
             "completed": false,
+            "active": true,
+            "archived": false,
             "subtasks": [],
             "comments": []
           }
@@ -195,6 +205,8 @@ PATCH /api/tabs/{tabId}/archive
 
 **Response 200:** Tab arquivada.
 
+Ao arquivar uma tab, todas as sections e tasks filhas também são arquivadas em cascata.
+
 ### Desarquivar tab
 
 ```
@@ -202,6 +214,8 @@ PATCH /api/tabs/{tabId}/unarchive
 ```
 
 **Response 200:** Tab desarquivada.
+
+Ao desarquivar uma tab, sections e tasks filhas também são desarquivadas em cascata.
 
 **Erro 400** – Limite de 5 tabs ativas:
 ```json
@@ -300,7 +314,8 @@ Content-Type: application/json
 **Request body:**
 ```json
 {
-  "name": "Novo nome"
+  "name": "Novo nome",
+  "archived": false
 }
 ```
 
@@ -308,6 +323,36 @@ Content-Type: application/json
 ```json
 {
   "message": "Cannot modify the default 'Geral' section"
+}
+```
+
+### Arquivar section
+
+```
+PATCH /api/tabs/{tabId}/sections/{sectionId}/archive
+```
+
+Arquiva a section e todas as tasks dela.
+
+**Erro 400** – Ao tentar arquivar a section "Geral":
+```json
+{
+  "message": "Cannot archive the default 'Geral' section"
+}
+```
+
+### Desarquivar section
+
+```
+PATCH /api/tabs/{tabId}/sections/{sectionId}/unarchive
+```
+
+Desarquiva a section e as tasks dela.
+
+**Erro 400** – Quando a tab estiver arquivada:
+```json
+{
+  "message": "Cannot unarchive a section while its tab is archived"
 }
 ```
 
@@ -388,6 +433,7 @@ GET /api/tasks?tabId={uuid}
 
 - Sem `tabId`: retorna todas as tasks do usuário.
 - Com `tabId`: retorna apenas as tasks da tab informada.
+- Em ambos os casos, retorna apenas tasks ativas/não arquivadas.
 
 **Response 200:** Lista de tasks. Cada task inclui `tabId` e `sectionId` na resposta:
 ```json
@@ -399,8 +445,90 @@ GET /api/tasks?tabId={uuid}
       "tabId": "uuid-da-tab",
       "sectionId": "uuid-da-section",
       "completed": false,
+      "active": true,
+      "archived": false,
       "subtasks": [],
       "comments": []
+    }
+  ]
+}
+```
+
+### Arquivar task
+
+```
+PATCH /api/tasks/archive/{taskId}
+```
+
+Endpoint legado equivalente:
+
+```
+PATCH /api/tasks/disable/{taskId}
+```
+
+### Desarquivar task
+
+```
+PATCH /api/tasks/unarchive/{taskId}
+```
+
+Endpoint legado equivalente:
+
+```
+PATCH /api/tasks/active/{taskId}
+```
+
+**Erro 400** – Quando a section ou a tab estiver arquivada:
+```json
+{
+  "message": "Cannot unarchive a task while its section is archived"
+}
+```
+
+ou
+
+```json
+{
+  "message": "Cannot unarchive a task while its tab is archived"
+}
+```
+
+### Buscar tasks com histórico
+
+```
+GET /api/tasks/search?q={texto}&tabId={tabId?}&scope=active|archived|all&limit={n?}
+```
+
+- `scope=active` por padrão
+- `scope=archived` retorna somente conteúdo arquivado
+- `scope=all` retorna ativos e arquivados
+
+**Response 200:**
+```json
+{
+  "status": "SUCCESS",
+  "message": "Search results",
+  "data": [
+    {
+      "task": {
+        "id": "task-uuid",
+        "title": "arrumar o escritório",
+        "active": false,
+        "archived": true
+      },
+      "tabName": "Atividades de casa",
+      "tabArchived": true,
+      "sectionName": "Geral",
+      "sectionArchived": true,
+      "score": 12,
+      "matches": [
+        {
+          "field": "title",
+          "label": "Titulo",
+          "snippet": "...arrumar o escritorio...",
+          "matchedTerms": ["escritorio"]
+        }
+      ]
     }
   ]
 }
@@ -466,6 +594,12 @@ Alternativa: `GET /api/tabs/{tabId}` – retorna tab com sections e tasks aninha
 1. `PATCH /api/tabs/{tabId}/archive`.
 2. Remover tab da lista de tabs ativas na UI.
 
+### Buscar histórico arquivado
+
+1. `GET /api/tasks/search?q=texto&scope=archived` para somente arquivados.
+2. `GET /api/tasks/search?q=texto&scope=all` para ativos + arquivados.
+3. Exibir na UI o contexto do resultado usando `tabArchived` e `sectionArchived`.
+
 ### Remover tab
 
 1. Se a tab tiver tasks: exibir modal de confirmação solicitando a senha do usuário.
@@ -485,6 +619,10 @@ Alternativa: `GET /api/tabs/{tabId}` – retorna tab com sections e tasks aninha
 | 400 | Tab is required for creating a task |
 | 400 | Tab is required for reordering tasks |
 | 400 | Maximum of 5 active tabs allowed. Archive or remove a tab first. |
+| 400 | Cannot archive the default 'Geral' section |
+| 400 | Cannot unarchive a section while its tab is archived |
+| 400 | Cannot unarchive a task while its section is archived |
+| 400 | Cannot unarchive a task while its tab is archived |
 | 400 | Tab name is required |
 | 400 | Tab name must have at most 20 characters |
 | 400 | Password confirmation is required to remove a tab that contains tasks |

@@ -33,6 +33,9 @@ public class Section extends Auditable {
     @Column(name = "sort_order", nullable = false)
     private Integer sortOrder = 0;
 
+    @Column
+    private Boolean archived = false;
+
     @OneToMany(mappedBy = "section", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonManagedReference
     private List<Task> tasks = new ArrayList<>();
@@ -80,5 +83,13 @@ public class Section extends Auditable {
 
     public void setTasks(List<Task> tasks) {
         this.tasks = tasks;
+    }
+
+    public boolean isArchived() {
+        return Boolean.TRUE.equals(archived);
+    }
+
+    public void setArchived(boolean archived) {
+        this.archived = archived;
     }
 }

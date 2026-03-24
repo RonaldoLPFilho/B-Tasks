@@ -29,25 +29,26 @@ public class TabController {
 
     @GetMapping
     public ResponseEntity<ApiResponseDTO<List<TabResponseDTO>>> getAllActive() {
-        List<TabResponseDTO> data = taskResponseMapper.toTabResponses(tabService.findAllForCurrentUser());
+        List<TabResponseDTO> data = taskResponseMapper.toTabResponses(tabService.findAllForCurrentUser(), false);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Tabs", data));
     }
 
     @GetMapping("/all")
     public ResponseEntity<ApiResponseDTO<List<TabResponseDTO>>> getAllIncludingArchived() {
-        List<TabResponseDTO> data = taskResponseMapper.toTabResponses(tabService.findAllIncludingArchivedForCurrentUser());
+        List<TabResponseDTO> data = taskResponseMapper.toTabResponses(tabService.findAllIncludingArchivedForCurrentUser(), true);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "All tabs", data));
     }
 
     @GetMapping("/{tabId}")
-    public ResponseEntity<ApiResponseDTO<TabResponseDTO>> getById(@PathVariable UUID tabId) {
-        TabResponseDTO data = taskResponseMapper.toTabResponse(tabService.findByIdForCurrentUser(tabId));
+    public ResponseEntity<ApiResponseDTO<TabResponseDTO>> getById(@PathVariable UUID tabId,
+                                                                  @RequestParam(defaultValue = "false") boolean includeArchived) {
+        TabResponseDTO data = taskResponseMapper.toTabResponse(tabService.findByIdForCurrentUser(tabId), includeArchived);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Tab found", data));
     }
 
     @PostMapping
     public ResponseEntity<ApiResponseDTO<TabResponseDTO>> create(@RequestBody CreateTabDTO dto) {
-        TabResponseDTO data = taskResponseMapper.toTabResponse(tabService.create(dto));
+        TabResponseDTO data = taskResponseMapper.toTabResponse(tabService.create(dto), false);
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(ApiResponseDTO.success(HttpStatus.CREATED, "Tab created", data));
@@ -55,7 +56,7 @@ public class TabController {
 
     @PutMapping("/{tabId}")
     public ResponseEntity<ApiResponseDTO<TabResponseDTO>> update(@PathVariable UUID tabId, @RequestBody UpdateTabDTO dto) {
-        TabResponseDTO data = taskResponseMapper.toTabResponse(tabService.update(tabId, dto));
+        TabResponseDTO data = taskResponseMapper.toTabResponse(tabService.update(tabId, dto), true);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Tab updated", data));
     }
 

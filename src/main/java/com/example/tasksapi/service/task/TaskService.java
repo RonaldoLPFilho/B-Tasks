@@ -40,7 +40,7 @@ public class TaskService {
     }
 
     public List<Task> findAllForCurrentUser() {
-        return taskRepository.findByUserIdOrderBySortOrderAsc(authenticatedUserService.getCurrentUser().getId());
+        return taskRepository.findActiveByUserIdOrderBySortOrderAsc(authenticatedUserService.getCurrentUser().getId());
     }
 
     public List<Task> findByTabIdForCurrentUser(UUID tabId) {
@@ -53,7 +53,7 @@ public class TaskService {
 
     public List<Task> findAllByToken(String token){
         User user = extractUser(token);
-        return taskRepository.findByUserIdOrderBySortOrderAsc(user.getId());
+        return taskRepository.findActiveByUserIdOrderBySortOrderAsc(user.getId());
     }
 
     public List<Task> findByTabId(UUID tabId, String token) {
@@ -61,12 +61,15 @@ public class TaskService {
     }
 
     public List<Task> findByTabId(UUID tabId, UUID userId) {
-        tabService.findByIdAndValidateOwnership(tabId, userId);
-        List<Task> bySection = taskRepository.findBySection_Tab_IdOrderBySortOrderAsc(tabId);
+        if (tabService.findByIdAndValidateOwnership(tabId, userId).isArchived()) {
+            return List.of();
+        }
+
+        List<Task> bySection = taskRepository.findActiveBySectionTabIdOrderBySortOrderAsc(tabId);
         if (!bySection.isEmpty()) {
             return bySection;
         }
-        return taskRepository.findByTab_IdOrderBySortOrderAsc(tabId);
+        return taskRepository.findActiveByTabIdAndSectionIsNullOrderBySortOrderAsc(tabId);
     }
 
     public Task findById(UUID id, String token){
@@ -80,27 +83,7 @@ public class TaskService {
 
     @Transactional
     public Task save(TaskDTO dto) {
-        User user = authenticatedUserService.getCurrentUser();
-
-        if (dto.getTabId() == null) {
-            throw new InvalidDataException("Tab is required for creating a task");
-        }
-
-        tabService.findByIdAndValidateOwnership(dto.getTabId(), user.getId());
-        Section geralSection = sectionService.findGeralSectionByTabId(dto.getTabId(), user.getId());
-
-        Category category = resolveTaskCategory(dto.getCategoryId(), user);
-
-        Task task = new Task(dto.getTitle(), dto.getDescription(), user, geralSection, dto.getJiraId(), category);
-
-        if(!isValidTask(task)){
-            throw new InvalidDataException("Invalid task");
-        }
-
-        taskRepository.bumpAllOrdersBySectionId(geralSection.getId());
-        task.setSortOrder(0);
-
-        return taskRepository.save(task);
+        return saveForUser(dto, authenticatedUserService.getCurrentUser());
     }
 
     @Transactional
@@ -252,34 +235,68 @@ public class TaskService {
 
     @Transactional
     public void disableTask(UUID taskId){
-        Task task = findByIdAndValidateOwnership(taskId, authenticatedUserService.getCurrentUser().getId());
-        task.setActive(false);
-
-        taskRepository.save(task);
+        archiveTask(taskId);
     }
 
     @Transactional
     public void disableTask(UUID taskId, String token){
-        Task task = findByIdAndValidateOwnership(taskId, extractUser(token).getId());
-        task.setActive(false);
-
-        taskRepository.save(task);
+        archiveTask(taskId, token);
     }
 
 
     @Transactional
     public void activeTask(UUID taskId){
-        Task task = findByIdAndValidateOwnership(taskId, authenticatedUserService.getCurrentUser().getId());
-        task.setActive(true);
-
-        taskRepository.save(task);
+        unarchiveTask(taskId);
     }
 
     @Transactional
     public void activeTask(UUID taskId, String token){
-        Task task = findByIdAndValidateOwnership(taskId, extractUser(token).getId());
-        task.setActive(true);
+        unarchiveTask(taskId, token);
+    }
 
+    @Transactional
+    public void archiveTask(UUID taskId) {
+        Task task = findByIdAndValidateOwnership(taskId, authenticatedUserService.getCurrentUser().getId());
+        task.setArchived(true);
+        taskRepository.save(task);
+    }
+
+    @Transactional
+    public void archiveTask(UUID taskId, String token) {
+        Task task = findByIdAndValidateOwnership(taskId, extractUser(token).getId());
+        task.setArchived(true);
+        taskRepository.save(task);
+    }
+
+    @Transactional
+    public void unarchiveTask(UUID taskId) {
+        Task task = findByIdAndValidateOwnership(taskId, authenticatedUserService.getCurrentUser().getId());
+
+        if (task.getSection() != null && task.getSection().isArchived()) {
+            throw new InvalidDataException("Cannot unarchive a task while its section is archived");
+        }
+        if (task.getSection() != null && task.getSection().getTab() != null && task.getSection().getTab().isArchived()) {
+            throw new InvalidDataException("Cannot unarchive a task while its tab is archived");
+        }
+
+        task.setSortOrder(resolveNextSortOrder(task.getSection()));
+        task.setArchived(false);
+        taskRepository.save(task);
+    }
+
+    @Transactional
+    public void unarchiveTask(UUID taskId, String token) {
+        Task task = findByIdAndValidateOwnership(taskId, extractUser(token).getId());
+
+        if (task.getSection() != null && task.getSection().isArchived()) {
+            throw new InvalidDataException("Cannot unarchive a task while its section is archived");
+        }
+        if (task.getSection() != null && task.getSection().getTab() != null && task.getSection().getTab().isArchived()) {
+            throw new InvalidDataException("Cannot unarchive a task while its tab is archived");
+        }
+
+        task.setSortOrder(resolveNextSortOrder(task.getSection()));
+        task.setArchived(false);
         taskRepository.save(task);
     }
 
@@ -288,7 +305,9 @@ public class TaskService {
             throw new InvalidDataException("Tab is required for creating a task");
         }
 
-        tabService.findByIdAndValidateOwnership(dto.getTabId(), user.getId());
+        if (tabService.findByIdAndValidateOwnership(dto.getTabId(), user.getId()).isArchived()) {
+            throw new InvalidDataException("Cannot create tasks in an archived tab");
+        }
         Section geralSection = sectionService.findGeralSectionByTabId(dto.getTabId(), user.getId());
 
         Category category = resolveTaskCategory(dto.getCategoryId(), user);
@@ -299,7 +318,7 @@ public class TaskService {
             throw new InvalidDataException("Invalid task");
         }
 
-        taskRepository.bumpAllOrdersBySectionId(geralSection.getId());
+        shiftSectionOrdersForInsertAtTop(geralSection);
         task.setSortOrder(0);
 
         return taskRepository.save(task);
@@ -345,5 +364,33 @@ public class TaskService {
         }
 
         return categoryService.findByIdAndValidateOwnership(categoryId, user.getId());
+    }
+
+    private void shiftSectionOrdersForInsertAtTop(Section section) {
+        List<Task> tasks = taskRepository.findBySection_IdOrderBySortOrderAsc(section.getId());
+        if (tasks.isEmpty()) {
+            return;
+        }
+
+        int temporaryOrder = -tasks.size();
+        for (Task existingTask : tasks) {
+            existingTask.setSortOrder(temporaryOrder++);
+        }
+        taskRepository.saveAll(tasks);
+        taskRepository.flush();
+
+        for (int i = 0; i < tasks.size(); i++) {
+            tasks.get(i).setSortOrder(i + 1);
+        }
+        taskRepository.saveAll(tasks);
+        taskRepository.flush();
+    }
+
+    private int resolveNextSortOrder(Section section) {
+        if (section == null || section.getId() == null) {
+            return 0;
+        }
+
+        return taskRepository.findMaxSortOrderBySectionId(section.getId()) + 1;
     }
 }

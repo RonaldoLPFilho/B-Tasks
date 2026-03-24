@@ -16,6 +16,7 @@ public record TaskResponseDTO(
         UUID sectionId,
         Integer sortOrder,
         boolean active,
+        boolean archived,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         CategoryResponseDTO category,

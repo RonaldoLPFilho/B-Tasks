@@ -17,6 +17,19 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
 
     List<Task> findByUserIdOrderBySortOrderAsc(UUID userId);
 
+    @Query("""
+            SELECT t
+            FROM Task t
+            JOIN t.section s
+            JOIN s.tab tab
+            WHERE t.user.id = :userId
+              AND t.active = true
+              AND COALESCE(s.archived, false) = false
+              AND tab.archived = false
+            ORDER BY t.sortOrder ASC
+            """)
+    List<Task> findActiveByUserIdOrderBySortOrderAsc(@Param("userId") UUID userId);
+
     List<Task> findByUserIdAndCategoryIsNull(UUID userId);
 
     List<Task> findByTabIsNull();
@@ -28,6 +41,51 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     List<Task> findByTab_IdAndSectionIsNullOrderBySortOrderAsc(UUID tabId);
 
     List<Task> findBySection_Tab_IdOrderBySortOrderAsc(UUID tabId);
+
+    @Query("""
+            SELECT t
+            FROM Task t
+            JOIN t.section s
+            JOIN s.tab tab
+            WHERE s.tab.id = :tabId
+              AND t.active = true
+              AND COALESCE(s.archived, false) = false
+              AND tab.archived = false
+            ORDER BY t.sortOrder ASC
+            """)
+    List<Task> findActiveBySectionTabIdOrderBySortOrderAsc(@Param("tabId") UUID tabId);
+
+    @Query("""
+            SELECT t
+            FROM Task t
+            JOIN t.tab tab
+            WHERE tab.id = :tabId
+              AND t.active = true
+              AND tab.archived = false
+              AND t.section IS NULL
+            ORDER BY t.sortOrder ASC
+            """)
+    List<Task> findActiveByTabIdAndSectionIsNullOrderBySortOrderAsc(@Param("tabId") UUID tabId);
+
+    List<Task> findBySection_IdOrderBySortOrderAsc(UUID sectionId);
+
+    @Query("SELECT COALESCE(MAX(t.sortOrder), -1) FROM Task t WHERE t.section.id = :sectionId")
+    int findMaxSortOrderBySectionId(@Param("sectionId") UUID sectionId);
+
+    @Query("""
+            SELECT DISTINCT t
+            FROM Task t
+            JOIN FETCH t.section s
+            JOIN FETCH s.tab tab
+            WHERE t.user.id = :userId
+              AND (
+                t.active = false
+                OR COALESCE(s.archived, false) = true
+                OR tab.archived = true
+              )
+            ORDER BY t.createdAt DESC
+            """)
+    List<Task> findArchivedForUser(@Param("userId") UUID userId);
 
     List<Task> findByCategoryId(UUID categoryId);
 

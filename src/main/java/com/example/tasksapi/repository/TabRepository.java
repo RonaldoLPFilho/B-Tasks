@@ -12,6 +12,8 @@ public interface TabRepository extends JpaRepository<Tab, UUID> {
 
     List<Tab> findByUserIdAndArchivedFalseOrderBySortOrderAsc(UUID userId);
 
+    List<Tab> findByUserIdAndArchivedTrueOrderBySortOrderAsc(UUID userId);
+
     List<Tab> findByUserIdOrderBySortOrderAsc(UUID userId);
 
     long countByUserIdAndArchivedFalse(UUID userId);

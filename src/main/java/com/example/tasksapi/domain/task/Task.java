@@ -208,4 +208,12 @@ public class Task extends Auditable {
     public void setActive(boolean active) {
         this.active = active;
     }
+
+    public boolean isArchived() {
+        return !active;
+    }
+
+    public void setArchived(boolean archived) {
+        this.active = !archived;
+    }
 }

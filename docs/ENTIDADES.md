@@ -109,15 +109,18 @@ Toda tab nova começa com a section "Geral". Novas tasks são criadas na section
 | id | UUID | Sim | PK, gerado |
 | name | String | Sim | - |
 | tab_id | UUID | Sim | FK para Tab |
+| archived | boolean | Sim | Default: false |
 | sort_order | Integer | Sim | Ordenação dentro da tab |
 | createdAt | LocalDateTime | - | Herdado de Auditable |
 | updatedAt | LocalDateTime | - | Herdado de Auditable |
 
 **Regras de negócio:**
-- Máximo **5 sections por tab** (incluindo "Geral")
+- Máximo **5 sections ativas por tab** (incluindo "Geral")
 - Section "Geral" é criada automaticamente ao criar uma tab
-- Section "Geral" **não pode ser removida nem alterada** (nome fixo); o usuário pode apenas adicionar e retirar tasks dela
+- Section "Geral" **não pode ser removida, alterada nem arquivada** manualmente
 - Ao excluir uma section não vazia: tasks são movidas para "Geral"
+- Arquivar uma section arquiva em cascata todas as tasks dela
+- Desarquivar uma section só é permitido quando a tab-pai não está arquivada
 
 **Relacionamentos:**
 - **N:1** com Tab (obrigatório)
@@ -143,7 +146,7 @@ Toda tab nova começa com a section "Geral". Novas tasks são criadas na section
 | finishedAt | LocalDate | Não       | Data de conclusão             |
 | jiraId     | String  | Não         | Integração Jira               |
 | sort_order | Integer | Sim         | Único por section (ux_task_section_sort) |
-| active     | boolean | Sim         | Default: true (soft delete)   |
+| active     | boolean | Sim         | Default: true (legado; representa task não arquivada) |
 | createdAt  | LocalDateTime | -    | Herdado de Auditable          |
 | updatedAt  | LocalDateTime | -    | Herdado de Auditable          |
 
@@ -154,9 +157,22 @@ Toda tab nova começa com a section "Geral". Novas tasks são criadas na section
 - Obrigatoriamente pertence a uma **section** (que pertence a uma tab)
 - `sort_order` define a ordem dentro da section
 - Novas tasks são criadas na section "Geral" da tab informada
-- `active = false`: task desativada (soft delete); não filtra listagens atualmente
+- `active = false`: task arquivada. Na API atual isso é exposto também como `archived = true`
+- Listagens padrão retornam apenas tasks ativas/não arquivadas
+- Arquivar uma task a remove da UI principal, mas a mantém disponível para busca histórica
+- Uma task não pode ser desarquivada se a section ou a tab-pai estiver arquivada
 - Ao criar: `tabId` obrigatório no request
 - Toda task deve permanecer vinculada a uma categoria; se `categoryId` não for informado, a task usa a categoria padrão do usuário
+
+---
+
+## Regras Gerais de Arquivamento
+
+- **Tab arquivada**: some da UI principal e não conta no limite de tabs ativas
+- Arquivar uma **Tab** arquiva em cascata suas **Sections** e **Tasks**
+- Desarquivar uma **Tab** desarquiva em cascata suas **Sections** e **Tasks**
+- Arquivar uma **Section** arquiva em cascata suas **Tasks**
+- Conteúdo arquivado continua persistido e disponível para busca com escopo `archived` ou `all`
 
 **Relacionamentos:**
 - **N:1** com User (dono)

@@ -46,12 +46,21 @@ public class SectionService {
         return findByTabId(tabId, authenticatedUserService.getCurrentUser().getId());
     }
 
+    public List<Section> findByTabIdIncludingArchivedForCurrentUser(UUID tabId) {
+        return findByTabIdIncludingArchived(tabId, authenticatedUserService.getCurrentUser().getId());
+    }
+
     public List<Section> findByTabId(UUID tabId, String token) {
         return findByTabId(tabId, userService.extractEmailFromTokenAndReturnUser(token)
                 .orElseThrow(() -> new NotFoundException("User not found")).getId());
     }
 
     public List<Section> findByTabId(UUID tabId, UUID userId) {
+        tabService.findByIdAndValidateOwnership(tabId, userId);
+        return sectionRepository.findActiveByTabIdOrderBySortOrderAsc(tabId);
+    }
+
+    public List<Section> findByTabIdIncludingArchived(UUID tabId, UUID userId) {
         tabService.findByIdAndValidateOwnership(tabId, userId);
         return sectionRepository.findByTabIdOrderBySortOrderAsc(tabId);
     }
@@ -102,7 +111,11 @@ public class SectionService {
             throw new InvalidDataException("Section name is required");
         }
 
-        long count = sectionRepository.countByTabId(tabId);
+        if (tab.isArchived()) {
+            throw new InvalidDataException("Cannot create sections in an archived tab");
+        }
+
+        long count = sectionRepository.countActiveByTabId(tabId);
         if (count >= MAX_SECTIONS_PER_TAB) {
             throw new InvalidDataException("Maximum of " + MAX_SECTIONS_PER_TAB + " sections per tab allowed");
         }
@@ -138,7 +151,26 @@ public class SectionService {
             section.setName(dto.name().trim());
         }
 
+        if (dto.archived() != null) {
+            if (dto.archived()) {
+                archiveForUser(tabId, sectionId, user);
+            } else {
+                unarchiveForUser(tabId, sectionId, user);
+            }
+            return findByIdAndValidateTab(sectionId, tabId, user.getId());
+        }
+
         return sectionRepository.save(section);
+    }
+
+    @Transactional
+    public void archive(UUID tabId, UUID sectionId) {
+        archiveForUser(tabId, sectionId, authenticatedUserService.getCurrentUser());
+    }
+
+    @Transactional
+    public void unarchive(UUID tabId, UUID sectionId) {
+        unarchiveForUser(tabId, sectionId, authenticatedUserService.getCurrentUser());
     }
 
     @Transactional
@@ -165,7 +197,7 @@ public class SectionService {
         }
 
         List<Task> tasks = section.getTasks();
-        int nextOrder = geralSection.getTasks().size();
+        int nextOrder = taskRepository.findMaxSortOrderBySectionId(geralSection.getId()) + 1;
         for (Task task : tasks) {
             task.setSection(geralSection);
             task.setSortOrder(nextOrder++);
@@ -193,7 +225,7 @@ public class SectionService {
     private void reorderForUser(UUID tabId, List<UUID> orderedIds, User user) {
         tabService.findByIdAndValidateOwnership(tabId, user.getId());
 
-        List<Section> sections = sectionRepository.findByTabIdOrderBySortOrderAsc(tabId);
+        List<Section> sections = sectionRepository.findActiveByTabIdOrderBySortOrderAsc(tabId);
         Set<UUID> validIds = new HashSet<>(sections.stream().map(Section::getId).toList());
         if (orderedIds.size() != validIds.size() || !validIds.equals(new HashSet<>(orderedIds))) {
             throw new InvalidDataException("IDs don't belong to tab or are duplicated");
@@ -202,5 +234,32 @@ public class SectionService {
         for (int i = 0; i < orderedIds.size(); i++) {
             sectionRepository.updateSortOrder(orderedIds.get(i), i);
         }
+    }
+
+    private void archiveForUser(UUID tabId, UUID sectionId, User user) {
+        Section section = findByIdAndValidateTab(sectionId, tabId, user.getId());
+        if (DEFAULT_SECTION_NAME.equalsIgnoreCase(section.getName())) {
+            throw new InvalidDataException("Cannot archive the default 'Geral' section");
+        }
+        if (section.isArchived()) {
+            return;
+        }
+
+        section.setArchived(true);
+        sectionRepository.save(section);
+    }
+
+    private void unarchiveForUser(UUID tabId, UUID sectionId, User user) {
+        Section section = findByIdAndValidateTab(sectionId, tabId, user.getId());
+        Tab tab = section.getTab();
+        if (tab.isArchived()) {
+            throw new InvalidDataException("Cannot unarchive a section while its tab is archived");
+        }
+        if (!section.isArchived()) {
+            return;
+        }
+
+        section.setArchived(false);
+        sectionRepository.save(section);
     }
 }

@@ -28,8 +28,11 @@ public class SectionController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponseDTO<List<SectionResponseDTO>>> list(@PathVariable UUID tabId) {
-        List<SectionResponseDTO> data = taskResponseMapper.toSectionResponses(sectionService.findByTabIdForCurrentUser(tabId));
+    public ResponseEntity<ApiResponseDTO<List<SectionResponseDTO>>> list(@PathVariable UUID tabId,
+                                                                         @RequestParam(defaultValue = "false") boolean includeArchived) {
+        List<SectionResponseDTO> data = includeArchived
+                ? taskResponseMapper.toSectionResponses(sectionService.findByTabIdIncludingArchivedForCurrentUser(tabId), true)
+                : taskResponseMapper.toSectionResponses(sectionService.findByTabIdForCurrentUser(tabId));
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Sections", data));
     }
 
@@ -54,6 +57,18 @@ public class SectionController {
     public ResponseEntity<ApiResponseDTO<Void>> delete(@PathVariable UUID tabId, @PathVariable UUID sectionId) {
         sectionService.delete(tabId, sectionId);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Section deleted", null));
+    }
+
+    @PatchMapping("/{sectionId}/archive")
+    public ResponseEntity<ApiResponseDTO<Void>> archive(@PathVariable UUID tabId, @PathVariable UUID sectionId) {
+        sectionService.archive(tabId, sectionId);
+        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Section archived", null));
+    }
+
+    @PatchMapping("/{sectionId}/unarchive")
+    public ResponseEntity<ApiResponseDTO<Void>> unarchive(@PathVariable UUID tabId, @PathVariable UUID sectionId) {
+        sectionService.unarchive(tabId, sectionId);
+        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Section unarchived", null));
     }
 
     @PatchMapping("/reorder")

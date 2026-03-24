@@ -61,6 +61,24 @@ class TaskSearchServiceTest {
         assertTrue(result.matches().stream().anyMatch(match -> "comments".equals(match.field())));
     }
 
+    @Test
+    void shouldBuildSearchResultWhenTabNameMatchesSearch() {
+        Task task = createTask();
+
+        TaskSearchResultDTO result = invokeToSearchResult(task, List.of("backend"));
+
+        assertTrue(result.matches().stream().anyMatch(match -> "tabName".equals(match.field())));
+    }
+
+    @Test
+    void shouldBuildSearchResultWhenSectionNameMatchesSearch() {
+        Task task = createTask();
+
+        TaskSearchResultDTO result = invokeToSearchResult(task, List.of("geral"));
+
+        assertTrue(result.matches().stream().anyMatch(match -> "sectionName".equals(match.field())));
+    }
+
     private TaskSearchResultDTO invokeToSearchResult(Task task, List<String> terms) {
         try {
             var method = TaskSearchService.class.getDeclaredMethod("toSearchResult", Task.class, List.class);

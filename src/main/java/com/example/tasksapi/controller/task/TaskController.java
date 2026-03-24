@@ -6,6 +6,7 @@ import com.example.tasksapi.dto.TaskDTO;
 import com.example.tasksapi.dto.TaskResponseDTO;
 import com.example.tasksapi.dto.TaskResponseMapper;
 import com.example.tasksapi.dto.TaskSearchResultDTO;
+import com.example.tasksapi.service.task.ArchiveScope;
 import com.example.tasksapi.service.task.TaskSearchService;
 import com.example.tasksapi.service.task.TaskService;
 import org.springframework.http.HttpStatus;
@@ -43,8 +44,9 @@ public class TaskController {
     public ResponseEntity<ApiResponseDTO<List<TaskSearchResultDTO>>> searchTasks(
             @RequestParam String q,
             @RequestParam(required = false) UUID tabId,
+            @RequestParam(defaultValue = "active") String scope,
             @RequestParam(required = false) Integer limit) {
-        List<TaskSearchResultDTO> data = taskSearchService.search(q, tabId, limit);
+        List<TaskSearchResultDTO> data = taskSearchService.search(q, tabId, limit, ArchiveScope.fromRequest(scope));
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Search results", data));
     }
 
@@ -89,13 +91,25 @@ public class TaskController {
 
     @PatchMapping("/disable/{taskId}")
     public ResponseEntity<ApiResponseDTO<Void>> disableTask(@PathVariable UUID taskId) {
-        taskService.disableTask(taskId);
-        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task disabled",  null));
+        taskService.archiveTask(taskId);
+        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task archived",  null));
     }
 
     @PatchMapping("/active/{taskId}")
     public ResponseEntity<ApiResponseDTO<Void>> activateTask(@PathVariable UUID taskId) {
-        taskService.activeTask(taskId);
-        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task activated",  null));
+        taskService.unarchiveTask(taskId);
+        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task unarchived",  null));
+    }
+
+    @PatchMapping("/archive/{taskId}")
+    public ResponseEntity<ApiResponseDTO<Void>> archiveTask(@PathVariable UUID taskId) {
+        taskService.archiveTask(taskId);
+        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task archived",  null));
+    }
+
+    @PatchMapping("/unarchive/{taskId}")
+    public ResponseEntity<ApiResponseDTO<Void>> unarchiveTask(@PathVariable UUID taskId) {
+        taskService.unarchiveTask(taskId);
+        return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Task unarchived",  null));
     }
 }

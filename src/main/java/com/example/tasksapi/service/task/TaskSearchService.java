@@ -43,14 +43,14 @@ public class TaskSearchService {
         this.authenticatedUserService = authenticatedUserService;
     }
 
-    public List<TaskSearchResultDTO> search(String rawQuery, UUID tabId, Integer limit) {
+    public List<TaskSearchResultDTO> search(String rawQuery, UUID tabId, Integer limit, ArchiveScope scope) {
         List<String> terms = normalizeTerms(rawQuery);
         if (terms.isEmpty()) {
             return List.of();
         }
 
         User user = authenticatedUserService.getCurrentUser();
-        List<UUID> taskIds = searchCandidateTaskIds(user.getId(), tabId, terms, limit);
+        List<UUID> taskIds = searchCandidateTaskIds(user.getId(), tabId, terms, limit, scope);
         if (taskIds.isEmpty()) {
             return List.of();
         }
@@ -66,11 +66,12 @@ public class TaskSearchService {
                 .toList();
     }
 
-    List<UUID> searchCandidateTaskIds(UUID userId, UUID tabId, List<String> terms, Integer limit) {
+    List<UUID> searchCandidateTaskIds(UUID userId, UUID tabId, List<String> terms, Integer limit, ArchiveScope scope) {
         StringBuilder sql = new StringBuilder("""
                 SELECT t.id
                 FROM task t
                 LEFT JOIN section s ON s.id = t.section_id
+                LEFT JOIN tab tb ON tb.id = COALESCE(s.tab_id, t.tab_id)
                 WHERE t.user_id = :userId
                 """);
 
@@ -82,6 +83,23 @@ public class TaskSearchService {
             sql.append(" AND s.tab_id = :tabId");
         }
 
+        switch (scope) {
+            case ACTIVE -> sql.append("""
+                     AND t.active = true
+                     AND COALESCE(s.archived, false) = false
+                     AND COALESCE(tb.archived, false) = false
+                    """);
+            case ARCHIVED -> sql.append("""
+                     AND (
+                        t.active = false
+                        OR COALESCE(s.archived, false) = true
+                        OR COALESCE(tb.archived, false) = true
+                     )
+                    """);
+            case ALL -> {
+            }
+        }
+
         for (int i = 0; i < terms.size(); i++) {
             String paramName = "term" + i;
             sql.append("""
@@ -89,6 +107,8 @@ public class TaskSearchService {
                         LOWER(COALESCE(t.title, '')) LIKE :%s
                         OR LOWER(COALESCE(t.description, '')) LIKE :%s
                         OR LOWER(COALESCE(t.jira_id, '')) LIKE :%s
+                        OR LOWER(COALESCE(tb.name, '')) LIKE :%s
+                        OR LOWER(COALESCE(s.name, '')) LIKE :%s
                         OR CAST(t.id AS TEXT) LIKE :%s
                         OR EXISTS (
                             SELECT 1
@@ -103,7 +123,7 @@ public class TaskSearchService {
                               AND LOWER(COALESCE(st.title, '')) LIKE :%s
                         )
                      )
-                    """.formatted(paramName, paramName, paramName, paramName, paramName, paramName));
+                    """.formatted(paramName, paramName, paramName, paramName, paramName, paramName, paramName, paramName));
             params.addValue(paramName, "%" + terms.get(i) + "%");
         }
 
@@ -121,6 +141,14 @@ public class TaskSearchService {
         score += addMatch(matches, "title", "Titulo", task.getTitle(), terms, 10);
         score += addMatch(matches, "description", "Descricao", task.getDescription(), terms, 6);
         score += addMatch(matches, "jiraId", "Jira ID", task.getJiraId(), terms, 8);
+        score += addMatch(matches, "tabName", "Aba",
+                task.getSection() != null && task.getSection().getTab() != null
+                        ? task.getSection().getTab().getName()
+                        : null,
+                terms, 7);
+        score += addMatch(matches, "sectionName", "Section",
+                task.getSection() != null ? task.getSection().getName() : null,
+                terms, 5);
         score += addMatch(matches, "taskId", "ID da task", task.getId().toString(), terms, 8);
 
         List<Comment> comments = task.getComments() != null ? task.getComments() : List.of();
@@ -144,7 +172,9 @@ public class TaskSearchService {
         return new TaskSearchResultDTO(
                 taskResponseMapper.toTaskResponse(task),
                 task.getSection() != null && task.getSection().getTab() != null ? task.getSection().getTab().getName() : null,
+                task.getSection() != null && task.getSection().getTab() != null && task.getSection().getTab().isArchived(),
                 task.getSection() != null ? task.getSection().getName() : null,
+                task.getSection() != null && task.getSection().isArchived(),
                 score,
                 matches
         );
