@@ -7,6 +7,7 @@ import com.example.tasksapi.domain.task.Subtask;
 import com.example.tasksapi.domain.task.Tab;
 import com.example.tasksapi.domain.task.Task;
 import com.example.tasksapi.dto.ArchivedItemTypeDTO;
+import com.example.tasksapi.dto.ArchivedItemsPageDTO;
 import com.example.tasksapi.dto.ArchivedSearchResultDTO;
 import com.example.tasksapi.dto.RestoreSectionRequestDTO;
 import com.example.tasksapi.dto.RestoreTaskRequestDTO;
@@ -21,6 +22,7 @@ import com.example.tasksapi.service.user.AuthenticatedUserService;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
@@ -65,37 +67,62 @@ public class ArchiveService {
     }
 
     public List<ArchivedSearchResultDTO> searchArchived(String rawQuery, Integer limit) {
-        List<String> terms = normalizeTerms(rawQuery);
-        if (terms.isEmpty()) {
-            return List.of();
-        }
+        return searchArchivedPage(rawQuery, 0, limit).content();
+    }
 
+    public ArchivedItemsPageDTO searchArchivedPage(String rawQuery, Integer page, Integer size) {
+        List<String> terms = normalizeTerms(rawQuery);
         User user = authenticatedUserService.getCurrentUser();
-        List<ArchivedSearchResultDTO> results = new ArrayList<>();
+        List<ArchivedResultCandidate> results = new ArrayList<>();
+        boolean shouldFilterByTerms = !terms.isEmpty();
 
         tabRepository.findByUserIdAndArchivedTrueOrderBySortOrderAsc(user.getId()).stream()
-                .map(tab -> toTabResult(tab, terms))
-                .filter(result -> !result.matches().isEmpty())
+                .map(tab -> new ArchivedResultCandidate(toTabResult(tab, terms), resolveArchivedAt(tab.getUpdatedAt(), tab.getCreatedAt())))
+                .filter(result -> !shouldFilterByTerms || !result.data().matches().isEmpty())
                 .forEach(results::add);
 
         sectionRepository.findArchivedForUser(user.getId()).stream()
                 .filter(section -> !section.getTab().isArchived() || section.isArchived())
-                .map(section -> toSectionResult(section, terms))
-                .filter(result -> !result.matches().isEmpty())
+                .map(section -> new ArchivedResultCandidate(toSectionResult(section, terms), resolveArchivedAt(section.getUpdatedAt(), section.getCreatedAt())))
+                .filter(result -> !shouldFilterByTerms || !result.data().matches().isEmpty())
                 .forEach(results::add);
 
         taskRepository.findArchivedForUser(user.getId()).stream()
                 .filter(task -> isEffectivelyArchived(task))
-                .map(task -> toTaskResult(task, terms))
-                .filter(result -> !result.matches().isEmpty())
+                .map(task -> new ArchivedResultCandidate(toTaskResult(task, terms), resolveArchivedAt(task.getUpdatedAt(), task.getCreatedAt())))
+                .filter(result -> !shouldFilterByTerms || !result.data().matches().isEmpty())
                 .forEach(results::add);
 
-        return results.stream()
-                .sorted(Comparator
-                        .comparingInt(ArchivedSearchResultDTO::score).reversed()
-                        .thenComparing(ArchivedSearchResultDTO::title, Comparator.nullsLast(String::compareToIgnoreCase)))
-                .limit(resolveLimit(limit))
+        int resolvedPage = resolvePage(page);
+        int resolvedSize = resolveLimit(size);
+        long totalElements = results.size();
+        int totalPages = totalElements == 0 ? 0 : (int) Math.ceil((double) totalElements / resolvedSize);
+        int fromIndex = Math.min(resolvedPage * resolvedSize, results.size());
+        Comparator<ArchivedResultCandidate> comparator = shouldFilterByTerms
+                ? Comparator
+                .comparingInt((ArchivedResultCandidate result) -> result.data().score()).reversed()
+                .thenComparing(ArchivedResultCandidate::archivedAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(result -> result.data().title(), Comparator.nullsLast(String::compareToIgnoreCase))
+                : Comparator
+                .comparing(ArchivedResultCandidate::archivedAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(result -> result.data().title(), Comparator.nullsLast(String::compareToIgnoreCase));
+
+        List<ArchivedSearchResultDTO> content = results.stream()
+                .sorted(comparator)
+                .skip(fromIndex)
+                .limit(resolvedSize)
+                .map(ArchivedResultCandidate::data)
                 .toList();
+
+        return new ArchivedItemsPageDTO(
+                content,
+                resolvedPage,
+                resolvedSize,
+                totalElements,
+                totalPages,
+                resolvedPage == 0,
+                totalPages == 0 || resolvedPage >= totalPages - 1
+        );
     }
 
     @Transactional
@@ -395,6 +422,18 @@ public class ArchiveService {
         return Math.min(requestedLimit, MAX_LIMIT);
     }
 
+    private int resolvePage(Integer requestedPage) {
+        if (requestedPage == null || requestedPage <= 0) {
+            return 0;
+        }
+
+        return requestedPage;
+    }
+
+    private LocalDateTime resolveArchivedAt(LocalDateTime updatedAt, LocalDateTime createdAt) {
+        return updatedAt != null ? updatedAt : createdAt;
+    }
+
     private List<String> normalizeTerms(String rawQuery) {
         if (rawQuery == null) {
             return List.of();
@@ -426,5 +465,8 @@ public class ArchiveService {
         }
 
         return taskRepository.findMaxSortOrderBySectionId(section.getId()) + 1;
+    }
+
+    private record ArchivedResultCandidate(ArchivedSearchResultDTO data, LocalDateTime archivedAt) {
     }
 }

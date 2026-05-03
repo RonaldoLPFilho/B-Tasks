@@ -1,7 +1,7 @@
 package com.example.tasksapi.controller.task;
 
 import com.example.tasksapi.dto.ApiResponseDTO;
-import com.example.tasksapi.dto.ArchivedSearchResultDTO;
+import com.example.tasksapi.dto.ArchivedItemsPageDTO;
 import com.example.tasksapi.dto.RestoreSectionRequestDTO;
 import com.example.tasksapi.dto.RestoreTaskRequestDTO;
 import com.example.tasksapi.service.task.ArchiveService;
@@ -10,7 +10,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -24,9 +23,11 @@ public class ArchiveController {
     }
 
     @GetMapping("/search")
-    public ResponseEntity<ApiResponseDTO<List<ArchivedSearchResultDTO>>> search(@RequestParam String q,
-                                                                                @RequestParam(required = false) Integer limit) {
-        List<ArchivedSearchResultDTO> data = archiveService.searchArchived(q, limit);
+    public ResponseEntity<ApiResponseDTO<ArchivedItemsPageDTO>> search(@RequestParam(required = false) String q,
+                                                                       @RequestParam(required = false) Integer limit,
+                                                                       @RequestParam(required = false) Integer page,
+                                                                       @RequestParam(required = false) Integer size) {
+        ArchivedItemsPageDTO data = archiveService.searchArchivedPage(q, page, size != null ? size : limit);
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Archived search results", data));
     }
 

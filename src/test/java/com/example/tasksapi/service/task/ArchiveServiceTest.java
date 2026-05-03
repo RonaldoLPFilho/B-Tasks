@@ -22,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -77,6 +78,53 @@ class ArchiveServiceTest {
         assertEquals(tab.getId(), result.id());
         assertFalse(result.matches().isEmpty());
         assertTrue(result.parentTabArchived());
+    }
+
+    @Test
+    void shouldReturnPagedArchivedResultsWithoutSearchQueryOrderedByLatestUpdate() {
+        User user = userWithId();
+
+        Tab olderTab = new Tab();
+        setField(olderTab, "id", UUID.randomUUID());
+        olderTab.setUser(user);
+        olderTab.setName("Old tab");
+        olderTab.setArchived(true);
+        setField(olderTab, "updatedAt", LocalDateTime.now().minusDays(2));
+
+        Tab activeTab = new Tab();
+        setField(activeTab, "id", UUID.randomUUID());
+        activeTab.setUser(user);
+        activeTab.setName("Active tab");
+        activeTab.setArchived(false);
+
+        Section activeSection = new Section();
+        setField(activeSection, "id", UUID.randomUUID());
+        activeSection.setName("Active section");
+        activeSection.setTab(activeTab);
+        activeSection.setArchived(false);
+
+        Task newerTask = new Task();
+        setField(newerTask, "id", UUID.randomUUID());
+        newerTask.setUser(user);
+        newerTask.setTitle("New task");
+        newerTask.setSection(activeSection);
+        newerTask.setTab(activeTab);
+        newerTask.setArchived(true);
+        setField(newerTask, "updatedAt", LocalDateTime.now());
+
+        when(authenticatedUserService.getCurrentUser()).thenReturn(user);
+        when(tabRepository.findByUserIdAndArchivedTrueOrderBySortOrderAsc(user.getId())).thenReturn(List.of(olderTab));
+        when(sectionRepository.findArchivedForUser(user.getId())).thenReturn(List.of());
+        when(taskRepository.findArchivedForUser(user.getId())).thenReturn(List.of(newerTask));
+
+        var page = archiveService.searchArchivedPage("", 0, 1);
+
+        assertEquals(1, page.content().size());
+        assertEquals(2, page.totalElements());
+        assertEquals(2, page.totalPages());
+        assertEquals(ArchivedItemTypeDTO.TASK, page.content().get(0).type());
+        assertTrue(page.first());
+        assertFalse(page.last());
     }
 
     @Test
