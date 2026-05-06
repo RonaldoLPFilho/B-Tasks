@@ -1,11 +1,11 @@
 package com.example.tasksapi.service.task;
 
 import com.example.tasksapi.domain.User;
-import com.example.tasksapi.domain.task.Comment;
 import com.example.tasksapi.domain.task.Section;
-import com.example.tasksapi.domain.task.Subtask;
 import com.example.tasksapi.domain.task.Tab;
 import com.example.tasksapi.domain.task.Task;
+import com.example.tasksapi.domain.task.element.CommentElement;
+import com.example.tasksapi.domain.task.element.SubtaskElement;
 import com.example.tasksapi.dto.TaskResponseMapper;
 import com.example.tasksapi.dto.TaskSearchResultDTO;
 import com.example.tasksapi.service.user.AuthenticatedUserService;
@@ -24,7 +24,6 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TaskSearchServiceTest {
@@ -103,11 +102,9 @@ class TaskSearchServiceTest {
         Task task = new Task("Corrigir login JWT", "Fluxo de autenticacao falha", user, section, "AUTH-77", null);
         setField(task, "id", UUID.randomUUID());
         setField(task, "createdAt", LocalDateTime.now());
-        setField(task, "comments", new java.util.ArrayList<>(List.of(
-                new Comment("Erro aparece depois do login", "ronis", task)
-        )));
-        setField(task, "subtasks", new java.util.ArrayList<>(List.of(
-                new Subtask("Validar token de login", task)
+        setField(task, "elements", new java.util.ArrayList<>(List.of(
+                new CommentElement("Erro aparece depois do login", "ronis", task),
+                new SubtaskElement("Validar token de login", task)
         )));
         return task;
     }

@@ -1,9 +1,9 @@
 package com.example.tasksapi.domain.task;
 
 import com.example.tasksapi.domain.*;
+import com.example.tasksapi.domain.task.element.TaskElement;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
@@ -30,9 +30,10 @@ public class Task extends Auditable {
     @Column(columnDefinition = "uuid")
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String title;
 
+    @Column(length = 1000)
     private String description;
 
     @ManyToOne
@@ -62,12 +63,7 @@ public class Task extends Auditable {
     private User user;
 
     @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    @JsonManagedReference
-    private List<Subtask> subtasks;
-
-    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    @JsonManagedReference
-    private List<Comment> comments;
+    private List<TaskElement> elements = new ArrayList<>();
 
     @Column(name = "sort_order", nullable = false)
     private Integer sortOrder = 0;
@@ -88,7 +84,6 @@ public class Task extends Auditable {
         this.completed = false;
         Task.this.jiraId = jiraId;
         this.category = category;
-        this.subtasks = new ArrayList<>();
         this.active = true;
     }
 
@@ -185,12 +180,8 @@ public class Task extends Auditable {
         return finishedAt;
     }
 
-    public List<Subtask> getSubtasks() {
-        return subtasks;
-    }
-
-    public List<Comment> getComments() {
-        return comments;
+    public List<TaskElement> getElements() {
+        return elements;
     }
 
     public Integer getSortOrder() {

@@ -1,11 +1,17 @@
 package com.example.tasksapi.dto;
 
 import com.example.tasksapi.domain.task.Category;
-import com.example.tasksapi.domain.task.Comment;
 import com.example.tasksapi.domain.task.Section;
-import com.example.tasksapi.domain.task.Subtask;
 import com.example.tasksapi.domain.task.Tab;
 import com.example.tasksapi.domain.task.Task;
+import com.example.tasksapi.domain.task.element.CommentElement;
+import com.example.tasksapi.domain.task.element.DueDateElement;
+import com.example.tasksapi.domain.task.element.SubtaskElement;
+import com.example.tasksapi.domain.task.element.TaskElement;
+import com.example.tasksapi.dto.element.CommentElementResponseDTO;
+import com.example.tasksapi.dto.element.DueDateElementResponseDTO;
+import com.example.tasksapi.dto.element.SubtaskElementResponseDTO;
+import com.example.tasksapi.dto.element.TaskElementResponseDTO;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -30,8 +36,9 @@ public class TaskResponseMapper {
                 task.getCreatedAt(),
                 task.getUpdatedAt(),
                 toCategoryResponse(task.getCategory()),
-                task.getSubtasks() == null ? Collections.emptyList() : task.getSubtasks().stream().map(this::toSubtaskResponse).toList(),
-                task.getComments() == null ? Collections.emptyList() : task.getComments().stream().map(this::toCommentResponse).toList()
+                task.getElements() == null
+                        ? Collections.emptyList()
+                        : task.getElements().stream().map(this::toElementResponse).toList()
         );
     }
 
@@ -81,7 +88,6 @@ public class TaskResponseMapper {
         if (category == null) {
             return null;
         }
-
         return new CategoryResponseDTO(
                 category.getId(),
                 category.getName(),
@@ -90,21 +96,24 @@ public class TaskResponseMapper {
         );
     }
 
-    public SubtaskResponseDTO toSubtaskResponse(Subtask subtask) {
-        return new SubtaskResponseDTO(
-                subtask.getId(),
-                subtask.getTitle(),
-                subtask.isCompleted()
-        );
-    }
-
-    public CommentResponseDTO toCommentResponse(Comment comment) {
-        return new CommentResponseDTO(
-                comment.getId(),
-                comment.getDescription(),
-                comment.getCreatedAt(),
-                comment.getAuthor()
-        );
+    public TaskElementResponseDTO toElementResponse(TaskElement element) {
+        if (element instanceof SubtaskElement s) {
+            return new SubtaskElementResponseDTO(
+                    s.getId(), s.getElementType(), s.getSortOrder(), s.getCreatedAt(),
+                    s.getTitle(), s.isCompleted()
+            );
+        } else if (element instanceof CommentElement c) {
+            return new CommentElementResponseDTO(
+                    c.getId(), c.getElementType(), c.getSortOrder(), c.getCreatedAt(),
+                    c.getDescription(), c.getAuthor()
+            );
+        } else if (element instanceof DueDateElement d) {
+            return new DueDateElementResponseDTO(
+                    d.getId(), d.getElementType(), d.getSortOrder(), d.getCreatedAt(),
+                    d.getDueDate()
+            );
+        }
+        throw new IllegalStateException("Unknown element type: " + element.getClass().getSimpleName());
     }
 
     public List<TaskResponseDTO> toTaskResponses(List<Task> tasks) {

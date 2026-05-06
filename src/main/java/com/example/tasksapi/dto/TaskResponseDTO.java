@@ -1,5 +1,7 @@
 package com.example.tasksapi.dto;
 
+import com.example.tasksapi.dto.element.TaskElementResponseDTO;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,7 +22,6 @@ public record TaskResponseDTO(
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         CategoryResponseDTO category,
-        List<SubtaskResponseDTO> subtasks,
-        List<CommentResponseDTO> comments
+        List<TaskElementResponseDTO> elements
 ) {
 }

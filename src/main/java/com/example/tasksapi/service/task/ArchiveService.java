@@ -1,10 +1,10 @@
 package com.example.tasksapi.service.task;
 
 import com.example.tasksapi.domain.User;
-import com.example.tasksapi.domain.task.Comment;
 import com.example.tasksapi.domain.task.Section;
-import com.example.tasksapi.domain.task.Subtask;
 import com.example.tasksapi.domain.task.Tab;
+import com.example.tasksapi.domain.task.element.CommentElement;
+import com.example.tasksapi.domain.task.element.SubtaskElement;
 import com.example.tasksapi.domain.task.Task;
 import com.example.tasksapi.dto.ArchivedItemTypeDTO;
 import com.example.tasksapi.dto.ArchivedItemsPageDTO;
@@ -325,18 +325,18 @@ public class ArchiveService {
         score += addMatch(matches, "jiraId", "Jira ID", task.getJiraId(), terms, 6);
         score += addMatch(matches, "taskId", "ID da task", task.getId().toString(), terms, idWeight);
 
-        List<Comment> comments = task.getComments() != null ? task.getComments() : List.of();
-        Comment matchingComment = comments.stream()
-                .filter(comment -> containsAny(comment.getDescription(), terms))
+        CommentElement matchingComment = task.getElements().stream()
+                .filter(e -> e instanceof CommentElement c && containsAny(c.getDescription(), terms))
+                .map(e -> (CommentElement) e)
                 .findFirst()
                 .orElse(null);
         if (matchingComment != null) {
             score += addMatch(matches, "comments", "Comentario", matchingComment.getDescription(), terms, 4);
         }
 
-        List<Subtask> subtasks = task.getSubtasks() != null ? task.getSubtasks() : List.of();
-        Subtask matchingSubtask = subtasks.stream()
-                .filter(subtask -> containsAny(subtask.getTitle(), terms))
+        SubtaskElement matchingSubtask = task.getElements().stream()
+                .filter(e -> e instanceof SubtaskElement s && containsAny(s.getTitle(), terms))
+                .map(e -> (SubtaskElement) e)
                 .findFirst()
                 .orElse(null);
         if (matchingSubtask != null) {
