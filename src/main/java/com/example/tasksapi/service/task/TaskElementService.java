@@ -16,6 +16,7 @@ import com.example.tasksapi.service.user.AuthenticatedUserService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.UUID;
 
 @Service
@@ -64,10 +65,10 @@ public class TaskElementService {
         }
         User user = authenticatedUserService.getCurrentUser();
         Task task = taskService.findByIdAndValidateOwnership(dto.taskId(), user.getId());
-        return taskElementRepository.save(new DueDateElement(dto.dueDate(), task));
+        return taskElementRepository.save(new DueDateElement(dto.dueDate(), dto.dueTime(), task));
     }
 
-    public void updateDueDate(UUID elementId, LocalDate dueDate) {
+    public void updateDueDate(UUID elementId, LocalDate dueDate, LocalTime dueTime) {
         if (dueDate == null) {
             throw new InvalidDataException("Due date is required");
         }
@@ -78,6 +79,7 @@ public class TaskElementService {
             throw new InvalidDataException("Element is not a due date");
         }
         dd.setDueDate(dueDate);
+        dd.setDueTime(dueTime);
         taskElementRepository.save(dd);
     }
 

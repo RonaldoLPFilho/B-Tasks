@@ -110,7 +110,7 @@ public class TaskResponseMapper {
         } else if (element instanceof DueDateElement d) {
             return new DueDateElementResponseDTO(
                     d.getId(), d.getElementType(), d.getSortOrder(), d.getCreatedAt(),
-                    d.getDueDate()
+                    d.getDueDate(), d.getDueTime()
             );
         }
         throw new IllegalStateException("Unknown element type: " + element.getClass().getSimpleName());

@@ -54,7 +54,7 @@ public class TaskElementController {
     public ResponseEntity<ApiResponseDTO<DueDateElementResponseDTO>> createDueDate(
             @PathVariable UUID taskId,
             @RequestBody CreateDueDateElementRequestDTO dto) {
-        var effectiveDto = new CreateDueDateElementRequestDTO(dto.dueDate(), taskId);
+        var effectiveDto = new CreateDueDateElementRequestDTO(dto.dueDate(), dto.dueTime(), taskId);
         DueDateElementResponseDTO data = (DueDateElementResponseDTO) taskResponseMapper.toElementResponse(
                 taskElementService.createDueDate(effectiveDto));
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -65,7 +65,7 @@ public class TaskElementController {
     public ResponseEntity<ApiResponseDTO<Void>> updateDueDate(
             @PathVariable UUID elementId,
             @RequestBody UpdateDueDateElementRequestDTO dto) {
-        taskElementService.updateDueDate(elementId, dto.dueDate());
+        taskElementService.updateDueDate(elementId, dto.dueDate(), dto.dueTime());
         return ResponseEntity.ok(ApiResponseDTO.success(HttpStatus.OK, "Due date updated", null));
     }
 
